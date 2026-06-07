@@ -7,7 +7,7 @@ const filingSchema = z.object({
 }).passthrough();
 
 const batchSchema = z.object({
-  rows: z.array(filingSchema).min(1).max(1000),
+  rows: z.array(filingSchema).max(1000),
   syncLogId: z.string().uuid().nullable(),
   filename: z.string().max(255).optional(),
   isFirstBatch: z.boolean().default(false),
