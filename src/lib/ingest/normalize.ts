@@ -3,19 +3,21 @@ import { computeLeadScore } from "./leadScore";
 
 type Row = Record<string, unknown>;
 
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
 const get = (r: Row, ...keys: string[]): string | null => {
-  for (const k of keys) {
-    const lower = k.toLowerCase();
-    for (const rk of Object.keys(r)) {
-      if (rk.toLowerCase().replace(/[\s_#]+/g, "_") === lower.replace(/[\s_#]+/g, "_")) {
-        const v = r[rk];
-        if (v === null || v === undefined || v === "") return null;
-        return String(v).trim();
-      }
+  const wanted = keys.map(norm);
+  for (const rk of Object.keys(r)) {
+    const n = norm(rk);
+    if (wanted.includes(n)) {
+      const v = r[rk];
+      if (v === null || v === undefined || v === "") return null;
+      return String(v).trim();
     }
   }
   return null;
 };
+
 
 const bool = (v: string | null): boolean => {
   if (!v) return false;
@@ -57,128 +59,93 @@ export interface NormalizedFiling {
 }
 
 export function normalizeFiling(row: Row): NormalizedFiling | null {
-  const job_number = get(row, "job_number", "job__", "job #", "job no");
-  if (!job_number) return null;
+  const rawJob = get(row, "job_filing_number", "job_number", "job__", "job #", "job no");
+  if (!rawJob) return null;
+
+  // "B00472129-P1" → job_number "B00472129", doc_number "P1"
+  let job_number = rawJob;
+  let doc_number = get(row, "doc__", "doc #", "doc_number");
+  const dash = rawJob.lastIndexOf("-");
+  if (!doc_number && dash > 0) {
+    job_number = rawJob.slice(0, dash);
+    doc_number = rawJob.slice(dash + 1);
+  }
 
   const boroRaw = get(row, "borough");
   const borough = boroRaw ? BOROUGH_MAP[boroRaw.toUpperCase()] ?? boroRaw.toUpperCase() : null;
 
-  const house_number = get(row, "house_number", "house__", "house #");
+  const house_number = get(row, "house_no", "house_number", "house #");
   const street_name = get(row, "street_name");
   const full_address = [house_number, street_name].filter(Boolean).join(" ") || null;
 
   const job_type = get(row, "job_type");
-  const job_status = get(row, "job_status");
+  const job_status = get(row, "filing_status", "job_status");
 
   const initial_cost = num(get(row, "initial_cost"));
   const total_construction_floor_area = num(get(row, "total_construction_floor_area"));
-  const latest_action_date = date(get(row, "latest_action_date"));
+  const latest_action_date = date(get(row, "current_status_date", "latest_action_date"));
 
   const f: NormalizedFiling = {
     job_number,
-    doc_number: get(row, "doc__", "doc #", "doc_number"),
+    doc_number,
     borough,
     house_number,
     street_name,
     full_address,
     block: get(row, "block"),
     lot: get(row, "lot"),
-    bin_number: get(row, "bin__", "bin #", "bin_number"),
+    bin_number: get(row, "bin", "bin__", "bin #", "bin_number"),
     bbl: get(row, "bbl"),
-    community_board: get(row, "community___board", "community board"),
+    community_board: get(row, "commmunity_board", "community_board"),
     council_district: get(row, "council_district"),
     census_tract: get(row, "census_tract"),
-    nta_name: get(row, "nta_name"),
+    nta_name: get(row, "nta", "nta_name"),
     latitude: num(get(row, "latitude", "gis_latitude")),
     longitude: num(get(row, "longitude", "gis_longitude")),
-    zoning_dist1: get(row, "zoning_dist1"),
-    zoning_dist2: get(row, "zoning_dist2"),
-    zoning_dist3: get(row, "zoning_dist3"),
-    special_district_1: get(row, "special_district_1"),
-    special_district_2: get(row, "special_district_2"),
 
     job_type,
-    job_type_label: job_type ? JOB_TYPE_LABELS[job_type] ?? null : null,
+    job_type_label: job_type ? JOB_TYPE_LABELS[job_type] ?? job_type : null,
     job_status,
-    job_status_description: job_status ? JOB_STATUS_LABELS[job_status] ?? get(row, "job_status_descrp") : get(row, "job_status_descrp"),
+    job_status_description: job_status ? JOB_STATUS_LABELS[job_status] ?? job_status : null,
     job_description: get(row, "job_description"),
     building_type: get(row, "building_type"),
-    existing_occupancy: get(row, "existing_occupancy"),
-    proposed_occupancy: get(row, "proposed_occupancy"),
-    building_class: get(row, "building_class"),
     owner_type: get(row, "owner_type"),
-    cluster: get(row, "cluster"),
 
-    landmarked: bool(get(row, "landmarked")),
-    adult_estab: bool(get(row, "adult_estab")),
-    loft_board: bool(get(row, "loft_board")),
-    city_owned: bool(get(row, "city_owned")),
     little_e: bool(get(row, "little_e")),
-    pc_filed: bool(get(row, "pc_filed")),
-    efiling_filed: bool(get(row, "efiling_filed")),
-    non_profit: bool(get(row, "non_profit")),
-    professional_cert: bool(get(row, "professional_cert")),
-    withdrawal_flag: bool(get(row, "withdrawal_flag")),
-    horizontal_enlargement: bool(get(row, "horizontal_enlrgmt", "horizontal_enlargement")),
-    vertical_enlargement: bool(get(row, "vertical_enlrgmt", "vertical_enlargement")),
-    site_fill: get(row, "site_fill"),
 
-    work_plumbing: bool(get(row, "plumbing")),
-    work_mechanical: bool(get(row, "mechanical")),
-    work_boiler: bool(get(row, "boiler")),
-    work_fuel_burning: bool(get(row, "fuel_burning")),
-    work_fuel_storage: bool(get(row, "fuel_storage")),
-    work_standpipe: bool(get(row, "standpipe")),
-    work_sprinkler: bool(get(row, "sprinkler")),
+    work_plumbing: bool(get(row, "plumbing_work_type", "plumbing")),
+    work_mechanical: bool(get(row, "mechanical_systems_work_type", "mechanical")),
+    work_boiler: bool(get(row, "boiler_equipment_work_type", "boiler")),
+    work_standpipe: bool(get(row, "stand_pipe_work_type", "standpipe")),
+    work_sprinkler: bool(get(row, "sprinkler_work_type", "sprinkler")),
+    work_curb_cut: bool(get(row, "curb_cut_work_type", "curb_cut")),
     work_fire_alarm: bool(get(row, "fire_alarm")),
     work_equipment: bool(get(row, "equipment")),
     work_fire_suppression: bool(get(row, "fire_suppression")),
-    work_curb_cut: bool(get(row, "curb_cut")),
-    work_other: bool(get(row, "other")),
-    work_other_description: get(row, "other_description"),
 
-    owner_type_detail: get(row, "owner_s_business_type", "owner_business_type"),
-    owner_first_name: get(row, "owner_s_first_name", "owner_first_name"),
-    owner_last_name: get(row, "owner_s_last_name", "owner_last_name"),
+    owner_first_name: get(row, "owner_first_name", "owner_s_first_name"),
+    owner_last_name: get(row, "owner_last_name", "owner_s_last_name"),
     owner_business_name: get(row, "owner_s_business_name", "owner_business_name"),
-    owner_house_number: get(row, "owner_s_house_number", "owner_house_number"),
-    owner_street_name: get(row, "owner_s_house_street_name", "owner_house_street_name"),
-    owner_city: get(row, "city", "owner_city"),
-    owner_state: get(row, "state", "owner_state"),
-    owner_zip: get(row, "zip", "owner_zip"),
 
-    applicant_first_name: get(row, "applicant_s_first_name", "applicant_first_name"),
-    applicant_last_name: get(row, "applicant_s_last_name", "applicant_last_name"),
+    applicant_first_name: get(row, "applicant_first_name", "applicant_s_first_name"),
+    applicant_last_name: get(row, "applicant_last_name", "applicant_s_last_name"),
     applicant_professional_title: get(row, "applicant_professional_title"),
-    applicant_license_number: get(row, "applicant_license__", "applicant_license_number"),
+    applicant_license_number: get(row, "applicant_license", "applicant_license__", "applicant_license_number"),
 
     initial_cost,
-    total_est_fee: num(get(row, "total_est__fee", "total_est_fee")),
-    fee_status: get(row, "fee_status"),
     total_construction_floor_area,
-    existing_zoning_sqft: num(get(row, "existing_zoning_sqft")),
-    proposed_zoning_sqft: num(get(row, "proposed_zoning_sqft")),
-    enlargement_sq_footage: num(get(row, "enlargement_sq_footage")),
-    street_frontage: num(get(row, "street_frontage")),
-    existing_stories: int(get(row, "existing_no__of_stories", "existing_stories")),
-    proposed_stories: int(get(row, "proposed_no__of_stories", "proposed_stories")),
+    existing_stories: int(get(row, "existing_stories", "existing_no__of_stories")),
+    proposed_stories: int(get(row, "proposed_no_of_stories", "proposed_stories")),
     existing_height: num(get(row, "existing_height")),
     proposed_height: num(get(row, "proposed_height")),
     existing_dwelling_units: int(get(row, "existing_dwelling_units")),
     proposed_dwelling_units: int(get(row, "proposed_dwelling_units")),
-    job_no_good_count: int(get(row, "job_no_good_count")),
 
     latest_action_date,
-    pre_filing_date: date(get(row, "pre__filing_date", "pre_filing_date")),
-    paid_date: date(get(row, "paid")),
-    fully_paid_date: date(get(row, "fully_paid")),
-    assigned_date: date(get(row, "assigned")),
-    approved_date: date(get(row, "approved")),
-    fully_permitted_date: date(get(row, "fully_permitted")),
+    pre_filing_date: date(get(row, "filing_date", "pre_filing_date")),
+    approved_date: date(get(row, "approved_date", "approved")),
+    fully_permitted_date: date(get(row, "first_permit_date", "fully_permitted")),
     signoff_date: date(get(row, "signoff_date")),
-    special_action_date: date(get(row, "special_action_date")),
-    special_action_status: get(row, "special_action_status"),
-    dob_run_date: date(get(row, "dobrundate", "dob_run_date")),
 
     data_source: "csv_upload",
     lead_score: computeLeadScore({
@@ -193,3 +160,4 @@ export function normalizeFiling(row: Row): NormalizedFiling | null {
 
   return f;
 }
+
