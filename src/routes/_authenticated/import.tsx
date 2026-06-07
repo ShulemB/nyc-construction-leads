@@ -3,9 +3,12 @@ import { useState, useRef } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { AppShell } from "@/components/layout/AppShell";
 import { ingestBatch, listSyncLogs } from "@/lib/import.functions";
+import { ingestPermitBatch } from "@/lib/permits.functions";
 import { normalizeFiling } from "@/lib/ingest/normalize";
+import { normalizePermit } from "@/lib/ingest/normalizePermit";
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -18,26 +21,52 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
+type Mode = "jobs" | "permits";
+
+interface Stats {
+  processed: number;
+  added: number;
+  updated: number;
+  errored: number;
+  matched: number;
+  unmatched: number;
+  ambiguous: number;
+  duplicates: number;
+}
+
+function emptyStats(): Stats {
+  return { processed: 0, added: 0, updated: 0, errored: 0, matched: 0, unmatched: 0, ambiguous: 0, duplicates: 0 };
+}
 
 function ImportPage() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<Mode>("jobs");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [stats, setStats] = useState({ processed: 0, added: 0, updated: 0, errored: 0 });
+  const [stats, setStats] = useState<Stats>(emptyStats());
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  const ingestFn = useServerFn(ingestBatch);
+  const ingestJobsFn = useServerFn(ingestBatch);
+  const ingestPermitsFn = useServerFn(ingestPermitBatch);
   const logsFn = useServerFn(listSyncLogs);
   const qc = useQueryClient();
   const { data: logsData } = useSuspenseQuery({ queryKey: ["sync-logs"], queryFn: () => logsFn() });
+
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setFile(null);
+    setDone(false);
+    setStats(emptyStats());
+    setProgress(0);
+  };
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
       setFile(f);
       setDone(false);
-      setStats({ processed: 0, added: 0, updated: 0, errored: 0 });
+      setStats(emptyStats());
       setProgress(0);
     }
   };
@@ -47,97 +76,151 @@ function ImportPage() {
     setBusy(true);
     setDone(false);
 
+    const isXlsx = /\.xlsx?$/i.test(file.name);
     const totalBytes = file.size;
     let syncLogId: string | null = null;
     let isFirst = true;
     let buffer: Array<Record<string, unknown>> = [];
-    let processed = 0;
-    let added = 0, updated = 0, errored = 0;
+    const acc: Stats = emptyStats();
+
+    const callBatch = async (rows: Record<string, unknown>[], last: boolean) => {
+      if (mode === "jobs") {
+        return ingestJobsFn({
+          data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
+        });
+      }
+      return ingestPermitsFn({
+        data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
+      });
+    };
 
     const flush = async (last: boolean) => {
       if (buffer.length === 0 && !last) return;
       try {
-        const res = await ingestFn({
-          data: {
-            rows: buffer as never,
-            syncLogId,
-            filename: file.name,
-            isFirstBatch: isFirst,
-            isLastBatch: last,
-          },
-        });
+        const res = await callBatch(buffer, last);
         syncLogId = res.syncLogId;
-        added += res.added; updated += res.updated; errored += res.errored;
-        processed += buffer.length;
-        setStats({ processed, added, updated, errored });
+        acc.added += res.added; acc.updated += res.updated; acc.errored += res.errored;
+        if ("matched" in res) {
+          acc.matched += res.matched ?? 0;
+          acc.unmatched += res.unmatched ?? 0;
+          acc.ambiguous += res.ambiguous ?? 0;
+          acc.duplicates += res.duplicates ?? 0;
+        }
+        acc.processed += buffer.length;
+        setStats({ ...acc });
         isFirst = false;
         buffer = [];
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Batch failed");
-        errored += buffer.length;
+        acc.errored += buffer.length;
         buffer = [];
       }
     };
 
-    await new Promise<void>((resolve, reject) => {
-      Papa.parse<Record<string, unknown>>(file, {
-        header: true,
-        skipEmptyLines: true,
-        worker: false,
-        chunk: async (chunkResult, parser) => {
-          parser.pause();
-          for (const raw of chunkResult.data) {
-            const normalized = normalizeFiling(raw);
-            if (normalized) buffer.push(normalized as unknown as Record<string, unknown>);
-            if (buffer.length >= BATCH_SIZE) {
-              await flush(false);
+    const normalize = mode === "jobs" ? normalizeFiling : normalizePermit;
+
+    if (isXlsx) {
+      // XLSX: read whole file, parse first sheet, batch in chunks
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      for (let i = 0; i < rows.length; i++) {
+        const n = normalize(rows[i]);
+        if (n) buffer.push(n as unknown as Record<string, unknown>);
+        if (buffer.length >= BATCH_SIZE) await flush(false);
+        if (i % 100 === 0) setProgress(Math.min(99, Math.round((i / rows.length) * 100)));
+      }
+      await flush(true);
+      setProgress(100);
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        Papa.parse<Record<string, unknown>>(file, {
+          header: true,
+          skipEmptyLines: true,
+          worker: false,
+          chunk: async (chunkResult, parser) => {
+            parser.pause();
+            for (const raw of chunkResult.data) {
+              const normalized = normalize(raw);
+              if (normalized) buffer.push(normalized as unknown as Record<string, unknown>);
+              if (buffer.length >= BATCH_SIZE) await flush(false);
             }
-          }
-          if (chunkResult.meta.cursor && totalBytes > 0) {
-            setProgress(Math.min(99, Math.round((chunkResult.meta.cursor / totalBytes) * 100)));
-          }
-          parser.resume();
-        },
-        complete: async () => {
-          await flush(true);
-          setProgress(100);
-          resolve();
-        },
-        error: (err) => reject(err),
+            if (chunkResult.meta.cursor && totalBytes > 0) {
+              setProgress(Math.min(99, Math.round((chunkResult.meta.cursor / totalBytes) * 100)));
+            }
+            parser.resume();
+          },
+          complete: async () => { await flush(true); setProgress(100); resolve(); },
+          error: (err) => reject(err),
+        });
       });
-    });
+    }
 
     setBusy(false);
     setDone(true);
     qc.invalidateQueries();
-    toast.success(`Import complete — ${added} new, ${updated} updated`);
+    toast.success(`Import complete — ${acc.added} new, ${acc.updated} updated`);
   };
 
   return (
     <AppShell>
       <div className="border-b border-border bg-card/30 px-8 py-6">
         <h1 className="font-display text-2xl font-bold">Import</h1>
-        <p className="text-sm text-muted-foreground">Upload an NYC DOB Job Application export (CSV)</p>
+        <p className="text-sm text-muted-foreground">Upload NYC DOB data — Job Applications or Approved Permits</p>
       </div>
 
       <div className="grid gap-6 p-8 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="font-display text-lg font-semibold">Upload CSV</h2>
+          <div className="flex gap-2 rounded-lg bg-muted p-1">
+            <button
+              onClick={() => switchMode("jobs")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "jobs" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+              disabled={busy}
+            >
+              Job Applications
+            </button>
+            <button
+              onClick={() => switchMode("permits")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "permits" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+              disabled={busy}
+            >
+              Approved Permits
+            </button>
+          </div>
+
+          <h2 className="mt-5 font-display text-lg font-semibold">
+            {mode === "jobs" ? "Upload Job Applications CSV" : "Upload Approved Permits (.csv or .xlsx)"}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Get the export from{" "}
-            <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">
-              NYC Open Data — DOB Job Application Filings
-            </a>
-            . Export → CSV.
+            {mode === "jobs" ? (
+              <>Export from{" "}
+                <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                  NYC Open Data — DOB Job Application Filings
+                </a>.
+              </>
+            ) : (
+              <>Export from{" "}
+                <a href="https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4" target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                  NYC Open Data — DOB NOW Build Approved Permits
+                </a>. Permits are linked to filings by Job Filing Number, then BIN, then BBL.
+              </>
+            )}
           </p>
 
           <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-background py-10 text-center transition-colors hover:border-brand hover:bg-brand-soft/30">
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div>
-              <div className="font-medium">{file ? file.name : "Drop CSV here or click to browse"}</div>
-              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "Up to ~500 MB"}</div>
+              <div className="font-medium">{file ? file.name : "Drop file here or click to browse"}</div>
+              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : ".csv"}</div>
             </div>
-            <input ref={inputRef} type="file" accept=".csv,text/csv" onChange={onPick} className="hidden" />
+            <input
+              ref={inputRef}
+              type="file"
+              accept={mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"}
+              onChange={onPick}
+              className="hidden"
+            />
           </label>
 
           {file && !done && (
@@ -154,6 +237,14 @@ function ImportPage() {
                 <Mini label="New" value={fmtNumber(stats.added)} accent="brand" />
                 <Mini label="Updated" value={fmtNumber(stats.updated)} />
                 <Mini label="Errored" value={fmtNumber(stats.errored)} accent={stats.errored ? "destructive" : undefined} />
+                {mode === "permits" && (
+                  <>
+                    <Mini label="Matched" value={fmtNumber(stats.matched)} accent="brand" />
+                    <Mini label="Unmatched" value={fmtNumber(stats.unmatched)} />
+                    <Mini label="Ambiguous" value={fmtNumber(stats.ambiguous)} />
+                    <Mini label="Duplicates" value={fmtNumber(stats.duplicates)} />
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -180,7 +271,10 @@ function ImportPage() {
                 )}
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate">{l.filename ?? l.source}</div>
+                  <div className="truncate">
+                    <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">{l.source === "permits_csv_upload" ? "permits" : "jobs"}</span>
+                    {l.filename ?? l.source}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(l.started_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
                     {" · "}{fmtNumber(l.rows_added)} new · {fmtNumber(l.rows_updated)} updated
