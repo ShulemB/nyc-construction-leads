@@ -100,12 +100,11 @@ function ImportPage() {
         const res = await callBatch(buffer, last);
         syncLogId = res.syncLogId;
         acc.added += res.added; acc.updated += res.updated; acc.errored += res.errored;
-        if ("matched" in res) {
-          acc.matched += res.matched ?? 0;
-          acc.unmatched += res.unmatched ?? 0;
-          acc.ambiguous += res.ambiguous ?? 0;
-          acc.duplicates += res.duplicates ?? 0;
-        }
+        const r = res as Partial<Stats>;
+        if (typeof r.matched === "number") acc.matched += r.matched;
+        if (typeof r.unmatched === "number") acc.unmatched += r.unmatched;
+        if (typeof r.ambiguous === "number") acc.ambiguous += r.ambiguous;
+        if (typeof r.duplicates === "number") acc.duplicates += r.duplicates;
         acc.processed += buffer.length;
         setStats({ ...acc });
         isFirst = false;
