@@ -73,11 +73,11 @@ export const ingestBatch = createServerFn({ method: "POST" })
 
     let errored = 0;
     if (newRows.length) {
-      const { error } = await supabaseAdmin.from("filings").upsert(newRows, { onConflict: "job_number,doc_number" });
+      const { error } = await supabaseAdmin.from("filings").upsert(newRows as never, { onConflict: "job_number,doc_number" });
       if (error) { errored += newRows.length; console.error("[ingest new]", error); }
     }
     if (updRows.length) {
-      const { error } = await supabaseAdmin.from("filings").upsert(updRows, { onConflict: "job_number,doc_number" });
+      const { error } = await supabaseAdmin.from("filings").upsert(updRows as never, { onConflict: "job_number,doc_number" });
       if (error) { errored += updRows.length; console.error("[ingest upd]", error); }
     }
 
