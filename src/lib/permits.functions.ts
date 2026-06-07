@@ -66,10 +66,53 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
       }
     }
 
-    // Resolve matches for all rows
+    // Resolve matches for all rows in 3 bulk queries (job_number, bin, bbl)
+    const candidates = [...byWorkSeq.values(), ...byTracking.values()];
+    const jobNums = [...new Set(candidates.map((r) => r.job_filing_number).filter(Boolean) as string[])];
+    const bins = [...new Set(candidates.map((r) => r.bin).filter(Boolean) as string[])];
+    const bbls = [...new Set(candidates.map((r) => r.bbl).filter(Boolean) as string[])];
+
+    const [jobRes, binRes, bblRes] = await Promise.all([
+      jobNums.length
+        ? supabaseAdmin.from("filings").select("job_number").in("job_number", jobNums)
+        : Promise.resolve({ data: [] as { job_number: string }[] }),
+      bins.length
+        ? supabaseAdmin.from("filings").select("job_number,bin_number").in("bin_number", bins)
+        : Promise.resolve({ data: [] as { job_number: string; bin_number: string }[] }),
+      bbls.length
+        ? supabaseAdmin.from("filings").select("job_number,bbl").in("bbl", bbls)
+        : Promise.resolve({ data: [] as { job_number: string; bbl: string }[] }),
+    ]);
+
+    const jobSet = new Set((jobRes.data ?? []).map((d) => d.job_number));
+    const binMap = new Map<string, Set<string>>();
+    for (const d of (binRes.data ?? []) as { job_number: string; bin_number: string }[]) {
+      if (!d.bin_number || !d.job_number) continue;
+      if (!binMap.has(d.bin_number)) binMap.set(d.bin_number, new Set());
+      binMap.get(d.bin_number)!.add(d.job_number);
+    }
+    const bblMap = new Map<string, Set<string>>();
+    for (const d of (bblRes.data ?? []) as { job_number: string; bbl: string }[]) {
+      if (!d.bbl || !d.job_number) continue;
+      if (!bblMap.has(d.bbl)) bblMap.set(d.bbl, new Set());
+      bblMap.get(d.bbl)!.add(d.job_number);
+    }
+
     const enriched: PermitRow[] = [];
-    for (const r of [...byWorkSeq.values(), ...byTracking.values()]) {
-      const match = await resolveMatch(supabaseAdmin, r);
+    for (const r of candidates) {
+      let match: { matched_job_number: string | null; match_status: string; match_method: string | null; match_candidates: unknown } =
+        { matched_job_number: null, match_status: "unmatched", match_method: null, match_candidates: null };
+      if (r.job_filing_number && jobSet.has(r.job_filing_number)) {
+        match = { matched_job_number: r.job_filing_number, match_status: "matched", match_method: "job_filing_number", match_candidates: null };
+      } else if (r.bin && binMap.has(r.bin)) {
+        const set = binMap.get(r.bin)!;
+        if (set.size === 1) match = { matched_job_number: [...set][0], match_status: "matched", match_method: "bin", match_candidates: null };
+        else match = { matched_job_number: null, match_status: "ambiguous", match_method: "bin", match_candidates: [...set] };
+      } else if (r.bbl && bblMap.has(r.bbl)) {
+        const set = bblMap.get(r.bbl)!;
+        if (set.size === 1) match = { matched_job_number: [...set][0], match_status: "matched", match_method: "bbl", match_candidates: null };
+        else match = { matched_job_number: null, match_status: "ambiguous", match_method: "bbl", match_candidates: [...set] };
+      }
       enriched.push({ ...r, ...match });
       if (match.match_status === "matched") matched++;
       else if (match.match_status === "ambiguous") ambiguous++;
