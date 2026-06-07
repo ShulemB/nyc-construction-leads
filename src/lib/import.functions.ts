@@ -42,7 +42,7 @@ export const ingestBatch = createServerFn({ method: "POST" })
     }
 
     // Mark all incoming rows as new (will be reset on existing duplicates via merge)
-    const rowsToUpsert = data.rows.map((r) => ({ ...r, is_new_this_sync: true }));
+    const rowsToUpsert = data.rows.map((r) => ({ ...r, is_new_this_sync: true })) as Array<Record<string, unknown> & { job_number: string; doc_number?: string | null }>;
 
     // Detect which job_number+doc_number combos already exist to count added vs updated
     const keys = rowsToUpsert.map((r) => ({
