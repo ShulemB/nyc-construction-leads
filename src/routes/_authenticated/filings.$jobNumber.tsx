@@ -142,6 +142,8 @@ function FilingDetail() {
               ) : "—"}
             </Field>
           </Card>
+
+          <RelatedPermits permits={permitsData.permits as never} />
         </div>
 
         <div className="space-y-6">
