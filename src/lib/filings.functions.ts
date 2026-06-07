@@ -27,9 +27,28 @@ export const listFilings = createServerFn({ method: "POST" })
 
     if (data.q && data.q.trim()) {
       const term = data.q.trim().replace(/[%_]/g, "");
-      q = q.or(
-        `full_address.ilike.%${term}%,owner_business_name.ilike.%${term}%,owner_last_name.ilike.%${term}%,job_number.ilike.%${term}%,job_description.ilike.%${term}%`
-      );
+      // Also search approved_permits and pull in their matched job numbers
+      const { data: permitMatches } = await supabase
+        .from("approved_permits")
+        .select("matched_job_number")
+        .or(
+          `work_permit.ilike.%${term}%,tracking_number.ilike.%${term}%,job_filing_number.ilike.%${term}%,permit_status.ilike.%${term}%,bin.ilike.%${term}%,bbl.ilike.%${term}%,owner_business_name.ilike.%${term}%,applicant_business_name.ilike.%${term}%`
+        )
+        .not("matched_job_number", "is", null)
+        .limit(500);
+      const extraJobs = [...new Set((permitMatches ?? []).map((p) => p.matched_job_number).filter(Boolean) as string[])];
+      const orParts = [
+        `full_address.ilike.%${term}%`,
+        `owner_business_name.ilike.%${term}%`,
+        `owner_last_name.ilike.%${term}%`,
+        `job_number.ilike.%${term}%`,
+        `job_description.ilike.%${term}%`,
+        `bin_number.ilike.%${term}%`,
+        `bbl.ilike.%${term}%`,
+        `applicant_last_name.ilike.%${term}%`,
+      ];
+      if (extraJobs.length) orParts.push(`job_number.in.(${extraJobs.map((j) => `"${j}"`).join(",")})`);
+      q = q.or(orParts.join(","));
     }
     if (data.boroughs?.length) q = q.in("borough", data.boroughs);
     if (data.jobTypes?.length) q = q.in("job_type", data.jobTypes);

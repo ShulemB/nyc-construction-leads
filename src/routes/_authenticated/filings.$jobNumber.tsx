@@ -3,7 +3,9 @@ import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { getFiling } from "@/lib/filings.functions";
+import { listPermitsByJob } from "@/lib/permits.functions";
 import { addLead } from "@/lib/leads.functions";
+import { RelatedPermits } from "@/components/filings/RelatedPermits";
 import { fmtCurrency, fmtNumber, fmtDate, daysAgo } from "@/lib/format";
 import { WORK_TYPES, jobTypeColor, scoreTier } from "@/lib/dob-constants";
 import { ChevronLeft, Plus, ExternalLink, MapPin } from "lucide-react";
@@ -18,9 +20,14 @@ export const Route = createFileRoute("/_authenticated/filings/$jobNumber")({
 function FilingDetail() {
   const { jobNumber } = Route.useParams();
   const fn = useServerFn(getFiling);
+  const permitsFn = useServerFn(listPermitsByJob);
   const { data } = useSuspenseQuery({
     queryKey: ["filing", jobNumber],
     queryFn: () => fn({ data: { jobNumber } }),
+  });
+  const { data: permitsData } = useSuspenseQuery({
+    queryKey: ["filing-permits", jobNumber],
+    queryFn: () => permitsFn({ data: { jobNumber } }),
   });
 
   const qc = useQueryClient();
@@ -135,6 +142,8 @@ function FilingDetail() {
               ) : "—"}
             </Field>
           </Card>
+
+          <RelatedPermits permits={permitsData.permits as never} />
         </div>
 
         <div className="space-y-6">

@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      approved_permits: {
+        Row: {
+          applicant_business_name: string | null
+          applicant_first_name: string | null
+          applicant_last_name: string | null
+          applicant_license_number: string | null
+          applicant_professional_title: string | null
+          approved_date: string | null
+          bbl: string | null
+          bin: string | null
+          block: string | null
+          borough: string | null
+          c_b_no: string | null
+          created_at: string
+          data_source: string | null
+          estimated_job_costs: number | null
+          expired_date: string | null
+          filing_reason: string | null
+          filing_status: string | null
+          house_no: string | null
+          id: string
+          issued_date: string | null
+          job_filing_number: string | null
+          job_start_date: string | null
+          last_synced_at: string | null
+          lot: string | null
+          match_candidates: Json | null
+          match_method: string | null
+          match_status: string
+          matched_job_number: string | null
+          owner_business_name: string | null
+          owner_name: string | null
+          permit_status: string | null
+          permit_subtype: string | null
+          permit_type: string | null
+          raw: Json | null
+          sequence_number: string | null
+          street_name: string | null
+          tracking_number: string | null
+          updated_at: string
+          work_on_floor: string | null
+          work_permit: string | null
+          work_retaining_wall: string | null
+          work_type: string | null
+        }
+        Insert: {
+          applicant_business_name?: string | null
+          applicant_first_name?: string | null
+          applicant_last_name?: string | null
+          applicant_license_number?: string | null
+          applicant_professional_title?: string | null
+          approved_date?: string | null
+          bbl?: string | null
+          bin?: string | null
+          block?: string | null
+          borough?: string | null
+          c_b_no?: string | null
+          created_at?: string
+          data_source?: string | null
+          estimated_job_costs?: number | null
+          expired_date?: string | null
+          filing_reason?: string | null
+          filing_status?: string | null
+          house_no?: string | null
+          id?: string
+          issued_date?: string | null
+          job_filing_number?: string | null
+          job_start_date?: string | null
+          last_synced_at?: string | null
+          lot?: string | null
+          match_candidates?: Json | null
+          match_method?: string | null
+          match_status?: string
+          matched_job_number?: string | null
+          owner_business_name?: string | null
+          owner_name?: string | null
+          permit_status?: string | null
+          permit_subtype?: string | null
+          permit_type?: string | null
+          raw?: Json | null
+          sequence_number?: string | null
+          street_name?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          work_on_floor?: string | null
+          work_permit?: string | null
+          work_retaining_wall?: string | null
+          work_type?: string | null
+        }
+        Update: {
+          applicant_business_name?: string | null
+          applicant_first_name?: string | null
+          applicant_last_name?: string | null
+          applicant_license_number?: string | null
+          applicant_professional_title?: string | null
+          approved_date?: string | null
+          bbl?: string | null
+          bin?: string | null
+          block?: string | null
+          borough?: string | null
+          c_b_no?: string | null
+          created_at?: string
+          data_source?: string | null
+          estimated_job_costs?: number | null
+          expired_date?: string | null
+          filing_reason?: string | null
+          filing_status?: string | null
+          house_no?: string | null
+          id?: string
+          issued_date?: string | null
+          job_filing_number?: string | null
+          job_start_date?: string | null
+          last_synced_at?: string | null
+          lot?: string | null
+          match_candidates?: Json | null
+          match_method?: string | null
+          match_status?: string
+          matched_job_number?: string | null
+          owner_business_name?: string | null
+          owner_name?: string | null
+          permit_status?: string | null
+          permit_subtype?: string | null
+          permit_type?: string | null
+          raw?: Json | null
+          sequence_number?: string | null
+          street_name?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          work_on_floor?: string | null
+          work_permit?: string | null
+          work_retaining_wall?: string | null
+          work_type?: string | null
+        }
+        Relationships: []
+      }
       filings: {
         Row: {
           adult_estab: boolean | null
