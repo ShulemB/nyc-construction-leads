@@ -3,19 +3,21 @@ import { computeLeadScore } from "./leadScore";
 
 type Row = Record<string, unknown>;
 
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
 const get = (r: Row, ...keys: string[]): string | null => {
-  for (const k of keys) {
-    const lower = k.toLowerCase();
-    for (const rk of Object.keys(r)) {
-      if (rk.toLowerCase().replace(/[\s_#]+/g, "_") === lower.replace(/[\s_#]+/g, "_")) {
-        const v = r[rk];
-        if (v === null || v === undefined || v === "") return null;
-        return String(v).trim();
-      }
+  const wanted = keys.map(norm);
+  for (const rk of Object.keys(r)) {
+    const n = norm(rk);
+    if (wanted.includes(n)) {
+      const v = r[rk];
+      if (v === null || v === undefined || v === "") return null;
+      return String(v).trim();
     }
   }
   return null;
 };
+
 
 const bool = (v: string | null): boolean => {
   if (!v) return false;
