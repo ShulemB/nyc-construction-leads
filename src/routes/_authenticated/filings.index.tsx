@@ -67,7 +67,7 @@ function FilingsList() {
     opts?: { keepPage?: boolean }
   ) => {
     navigate({
-      search: (prev) => {
+      search: (prev: Record<string, unknown>) => {
         const next: Record<string, unknown> = { ...prev, ...patch };
         // Normalize empty arrays / defaults out of the URL
         if (Array.isArray(next.boroughs) && next.boroughs.length === 0) next.boroughs = undefined;
