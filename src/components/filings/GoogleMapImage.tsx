@@ -5,12 +5,14 @@ import { Link } from "@tanstack/react-router";
 const STORAGE_KEY = "google_maps_api_key";
 
 export function GoogleMapImage({
-  latitude,
-  longitude,
+  houseNumber,
+  streetName,
+  borough,
   address,
 }: {
-  latitude: number | string | null | undefined;
-  longitude: number | string | null | undefined;
+  houseNumber: string | number | null | undefined;
+  streetName: string | null | undefined;
+  borough: string | null | undefined;
   address?: string | null;
 }) {
   const [apiKey, setApiKey] = useState<string>("");
@@ -20,18 +22,18 @@ export function GoogleMapImage({
     setApiKey(k);
   }, []);
 
-  const lat = latitude != null ? Number(latitude) : null;
-  const lng = longitude != null ? Number(longitude) : null;
-  const hasCoords = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
+  const addrString = `${houseNumber ?? ""} ${streetName ?? ""}, ${borough ?? ""}, NY`.trim();
+  const hasAddress = !!houseNumber && !!streetName && !!borough;
 
-  if (!hasCoords) return null;
+  if (!hasAddress) return null;
 
-  const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+  const encodedAddr = encodeURIComponent(addrString);
+  const mapsLink = `https://www.google.com/maps?q=${encodedAddr}`;
   const staticUrl = apiKey
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=18&size=800x300&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${encodeURIComponent(apiKey)}`
+    ? `https://maps.googleapis.com/maps/api/staticmap?center=${encodedAddr}&zoom=18&size=800x300&scale=2&maptype=roadmap&markers=color:red%7C${encodedAddr}&key=${encodeURIComponent(apiKey)}`
     : null;
   const streetUrl = apiKey
-    ? `https://maps.googleapis.com/maps/api/streetview?size=800x300&location=${lat},${lng}&fov=80&key=${encodeURIComponent(apiKey)}`
+    ? `https://maps.googleapis.com/maps/api/streetview?size=800x300&location=${encodedAddr}&fov=80&key=${encodeURIComponent(apiKey)}`
     : null;
 
   return (
@@ -79,7 +81,7 @@ export function GoogleMapImage({
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2 text-xs">
         <div className="flex items-center gap-2 text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" />
-          {lat.toFixed(5)}, {lng.toFixed(5)}
+          <span className="truncate max-w-[50ch]">{addrString}</span>
           <a
             href={mapsLink}
             target="_blank"
