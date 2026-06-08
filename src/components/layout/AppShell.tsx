@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Building2, LayoutDashboard, FileSearch, Star, Upload, LogOut, type LucideIcon } from "lucide-react";
+import { Building2, LayoutDashboard, FileSearch, Star, Upload, LogOut, Settings, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -9,6 +9,7 @@ const NAV: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/filings", label: "Filings", icon: FileSearch },
   { to: "/leads", label: "Leads", icon: Star },
   { to: "/import", label: "Import", icon: Upload },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
