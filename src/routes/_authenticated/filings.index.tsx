@@ -51,12 +51,13 @@ function FilingsList() {
     if (qInput === q) return;
     const t = setTimeout(() => {
       navigate({
-        search: (prev) => ({ ...prev, q: qInput || undefined, page: undefined }),
+        search: (prev: Record<string, unknown>) => ({ ...prev, q: qInput || undefined, page: undefined }),
         replace: true,
       });
     }, 250);
     return () => clearTimeout(t);
   }, [qInput, q, navigate]);
+
 
   const update = (
     patch: Partial<{
