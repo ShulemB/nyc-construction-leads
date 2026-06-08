@@ -64,7 +64,6 @@ function Dashboard() {
                   return (
                     <li key={f.id} className="flex items-center gap-4 px-6 py-4">
                       <span className={`h-10 w-1 rounded-full ${tier === "hot" ? "bg-score-hot" : tier === "warm" ? "bg-score-warm" : "bg-score-cold"}`} />
-                      <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-xs ${jobTypeColor(f.job_type)}`}>{f.job_type}</span>
                       <div className="min-w-0 flex-1">
                         <Link to="/filings/$jobNumber" params={{ jobNumber: f.job_number }} className="block truncate font-medium hover:text-brand">
                           {f.full_address ?? "(no address)"}
