@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPin, ExternalLink, Settings } from "lucide-react";
+import { MapPin, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 const STORAGE_KEY = "google_maps_api_key";
