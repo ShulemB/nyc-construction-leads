@@ -7,7 +7,7 @@ export const listLeads = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("leads")
-      .select("*, filing:filings(*)")
+      .select("*, filing:job_application_filings(*)")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
