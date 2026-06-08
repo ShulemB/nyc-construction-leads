@@ -52,6 +52,7 @@ function FilingDetail() {
 
   const tier = scoreTier(f.lead_score ?? 0);
   const activeWork = WORK_TYPES.filter((w) => f[w.key as keyof typeof f]);
+  const allDocs = data.filings;
 
   return (
     <AppShell>
@@ -69,6 +70,7 @@ function FilingDetail() {
                 {tier} · {f.lead_score}
               </span>
               <span className="text-muted-foreground">Job #{f.job_number}{f.doc_number ? ` · Doc ${f.doc_number}` : ""}</span>
+              {allDocs.length > 1 && <span className="text-muted-foreground">· {allDocs.length} documents</span>}
             </div>
           </div>
           <Button onClick={() => addMutation.mutate(f.id)} disabled={addMutation.isPending}>
@@ -80,31 +82,55 @@ function FilingDetail() {
       <div className="grid gap-6 p-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card title="Overview">
+            <Field label="Job number">{f.job_number}</Field>
+            <Field label="Doc number">{f.doc_number}</Field>
+            <Field label="Job type">{`${f.job_type ?? "—"} · ${f.job_type_label ?? ""}`}</Field>
+            <Field label="Job status">{f.job_status_description ?? f.job_status}</Field>
             <Field label="Borough">{f.borough}</Field>
+            <Field label="Full address">{f.full_address}</Field>
+            <Field label="House / Street">{[f.house_number, f.street_name].filter(Boolean).join(" ")}</Field>
             <Field label="BIN">{f.bin_number}</Field>
             <Field label="BBL">{f.bbl}</Field>
             <Field label="Block / Lot">{[f.block, f.lot].filter(Boolean).join(" / ")}</Field>
             <Field label="Community Board">{f.community_board}</Field>
+            <Field label="Council District">{f.council_district}</Field>
+            <Field label="Census Tract">{f.census_tract}</Field>
+            <Field label="NTA">{f.nta_name}</Field>
             <Field label="Building type">{f.building_type}</Field>
             <Field label="Building class">{f.building_class}</Field>
-            <Field label="Zoning">{[f.zoning_dist1, f.zoning_dist2, f.zoning_dist3].filter(Boolean).join(", ")}</Field>
+            <Field label="Cluster">{f.cluster}</Field>
+            <Field label="Owner type">{f.owner_type}</Field>
             {f.job_description && (
               <div className="col-span-2">
                 <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</div>
-                <p className="mt-1 text-sm">{f.job_description}</p>
+                <p className="mt-1 text-sm whitespace-pre-wrap">{f.job_description}</p>
               </div>
             )}
+          </Card>
+
+          <Card title="Zoning">
+            <Field label="Zoning Dist 1">{f.zoning_dist1}</Field>
+            <Field label="Zoning Dist 2">{f.zoning_dist2}</Field>
+            <Field label="Zoning Dist 3">{f.zoning_dist3}</Field>
+            <Field label="Special Dist 1">{f.special_district_1}</Field>
+            <Field label="Special Dist 2">{f.special_district_2}</Field>
+            <Field label="Site fill">{f.site_fill}</Field>
+            <Field label="Existing zoning sqft">{f.existing_zoning_sqft ? fmtNumber(f.existing_zoning_sqft) : "—"}</Field>
+            <Field label="Proposed zoning sqft">{f.proposed_zoning_sqft ? fmtNumber(f.proposed_zoning_sqft) : "—"}</Field>
           </Card>
 
           <Card title="Scope & financials">
             <Field label="Est. cost">{fmtCurrency(f.initial_cost)}</Field>
             <Field label="Est. fee">{fmtCurrency(f.total_est_fee)}</Field>
+            <Field label="Fee status">{f.fee_status}</Field>
             <Field label="Floor area">{f.total_construction_floor_area ? `${fmtNumber(f.total_construction_floor_area)} sqft` : "—"}</Field>
             <Field label="Enlargement">{f.enlargement_sq_footage ? `${fmtNumber(f.enlargement_sq_footage)} sqft` : "—"}</Field>
+            <Field label="Street frontage">{f.street_frontage ? `${fmtNumber(f.street_frontage)} ft` : "—"}</Field>
             <Field label="Stories (existing → proposed)">{`${f.existing_stories ?? "—"} → ${f.proposed_stories ?? "—"}`}</Field>
             <Field label="Height (existing → proposed)">{`${f.existing_height ?? "—"} → ${f.proposed_height ?? "—"}`}</Field>
             <Field label="Dwelling units">{`${f.existing_dwelling_units ?? "—"} → ${f.proposed_dwelling_units ?? "—"}`}</Field>
             <Field label="Occupancy">{`${f.existing_occupancy ?? "—"} → ${f.proposed_occupancy ?? "—"}`}</Field>
+            <Field label="No-good count">{f.job_no_good_count}</Field>
           </Card>
 
           <Card title="Work types">
@@ -115,6 +141,12 @@ function FilingDetail() {
                 {activeWork.map((w) => (
                   <span key={w.key} className="rounded-md bg-brand-soft px-3 py-1 text-sm text-brand">{w.label}</span>
                 ))}
+              </div>
+            )}
+            {f.work_other_description && (
+              <div className="col-span-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Other work</div>
+                <p className="mt-1 text-sm">{f.work_other_description}</p>
               </div>
             )}
           </Card>
@@ -144,24 +176,58 @@ function FilingDetail() {
           </Card>
 
           <RelatedPermits permits={permitsData.permits as never} />
+
+          {allDocs.length > 1 && (
+            <section className="rounded-xl border border-border bg-card">
+              <h2 className="border-b border-border px-5 py-3 font-display text-sm font-semibold">All Documents on Job ({allDocs.length})</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Doc #</th>
+                      <th className="px-3 py-2 text-left font-medium">Status</th>
+                      <th className="px-3 py-2 text-left font-medium">Latest action</th>
+                      <th className="px-3 py-2 text-left font-medium">Cost</th>
+                      <th className="px-3 py-2 text-left font-medium">Fee</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {allDocs.map((d) => (
+                      <tr key={d.id}>
+                        <td className="px-3 py-2">{d.doc_number ?? "—"}</td>
+                        <td className="px-3 py-2">{d.job_status_description ?? d.job_status ?? "—"}</td>
+                        <td className="px-3 py-2">{fmtDate(d.latest_action_date)}</td>
+                        <td className="px-3 py-2">{fmtCurrency(d.initial_cost)}</td>
+                        <td className="px-3 py-2">{fmtCurrency(d.total_est_fee)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="space-y-6">
           <Card title="Key dates">
-            <Field label="Latest action">{`${fmtDate(f.latest_action_date)} (${daysAgo(f.latest_action_date)})`}</Field>
+            <Field label="Latest action">{f.latest_action_date ? `${fmtDate(f.latest_action_date)} (${daysAgo(f.latest_action_date)})` : "—"}</Field>
             <Field label="Pre-filed">{fmtDate(f.pre_filing_date)}</Field>
             <Field label="Paid">{fmtDate(f.paid_date)}</Field>
+            <Field label="Fully paid">{fmtDate(f.fully_paid_date)}</Field>
             <Field label="Assigned">{fmtDate(f.assigned_date)}</Field>
             <Field label="Approved">{fmtDate(f.approved_date)}</Field>
             <Field label="Fully permitted">{fmtDate(f.fully_permitted_date)}</Field>
             <Field label="Sign-off">{fmtDate(f.signoff_date)}</Field>
+            <Field label="Special action">{fmtDate(f.special_action_date)}</Field>
+            <Field label="Special action status">{f.special_action_status}</Field>
+            <Field label="DOB run date">{fmtDate(f.dob_run_date)}</Field>
           </Card>
 
           {f.latitude && f.longitude && (
             <Card title="Location">
               <div className="col-span-2 flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-brand" />
-                {f.latitude.toFixed(5)}, {f.longitude.toFixed(5)}
+                {Number(f.latitude).toFixed(5)}, {Number(f.longitude).toFixed(5)}
               </div>
               <a
                 href={`https://www.google.com/maps?q=${f.latitude},${f.longitude}`}
@@ -177,16 +243,29 @@ function FilingDetail() {
             <div className="col-span-2 flex flex-wrap gap-2">
               {[
                 { ok: f.landmarked, label: "Landmarked" },
+                { ok: f.adult_estab, label: "Adult estab." },
+                { ok: f.loft_board, label: "Loft board" },
                 { ok: f.city_owned, label: "City owned" },
                 { ok: f.non_profit, label: "Non-profit" },
                 { ok: f.little_e, label: "Hazardous" },
+                { ok: f.pc_filed, label: "PC filed" },
+                { ok: f.efiling_filed, label: "eFiling" },
                 { ok: f.professional_cert, label: "Pro cert" },
+                { ok: f.withdrawal_flag, label: "Withdrawn" },
                 { ok: f.horizontal_enlargement, label: "Horizontal enl." },
                 { ok: f.vertical_enlargement, label: "Vertical enl." },
               ].filter((x) => x.ok).map((x) => (
                 <span key={x.label} className="rounded-md bg-muted px-2 py-0.5 text-xs">{x.label}</span>
-              )) || <span className="text-sm text-muted-foreground">None</span>}
+              ))}
             </div>
+          </Card>
+
+          <Card title="Source">
+            <Field label="Source">{f.data_source}</Field>
+            <Field label="Ingested">{fmtDate(f.ingested_at)}</Field>
+            <Field label="Last synced">{fmtDate(f.last_synced_at)}</Field>
+            <Field label="New this sync">{f.is_new_this_sync ? "Yes" : "No"}</Field>
+            <Field label="Lead score">{f.lead_score}</Field>
           </Card>
         </div>
       </div>
