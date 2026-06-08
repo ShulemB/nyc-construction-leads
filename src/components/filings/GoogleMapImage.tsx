@@ -1,18 +1,6 @@
 import { useEffect, useState } from "react";
-import { MapPin, Key, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { MapPin, ExternalLink, Settings } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const STORAGE_KEY = "google_maps_api_key";
 
@@ -26,32 +14,15 @@ export function GoogleMapImage({
   address?: string | null;
 }) {
   const [apiKey, setApiKey] = useState<string>("");
-  const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const k = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) ?? "" : "";
     setApiKey(k);
-    setInput(k);
   }, []);
 
   const lat = latitude != null ? Number(latitude) : null;
   const lng = longitude != null ? Number(longitude) : null;
   const hasCoords = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
-
-  const save = () => {
-    const trimmed = input.trim();
-    if (trimmed) {
-      window.localStorage.setItem(STORAGE_KEY, trimmed);
-      setApiKey(trimmed);
-      toast.success("Google Maps API key saved");
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
-      setApiKey("");
-      toast.success("Google Maps API key cleared");
-    }
-    setOpen(false);
-  };
 
   if (!hasCoords) return null;
 
@@ -96,6 +67,12 @@ export function GoogleMapImage({
               Stored locally in your browser. Used to load Static Maps & Street View imagery.
             </p>
           </div>
+          <Link
+            to="/settings"
+            className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground hover:bg-brand/90"
+          >
+            <Settings className="h-3 w-3" /> Go to Settings
+          </Link>
         </div>
       )}
 
@@ -112,51 +89,16 @@ export function GoogleMapImage({
             Open in Google Maps <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
-              <Key className="h-3 w-3" /> {apiKey ? "Change key" : "Add API key"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Google Maps API key</DialogTitle>
-              <DialogDescription>
-                Enter a Google Maps API key with Static Maps API and Street View Static API enabled. The key is stored
-                only in your browser's local storage.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="gmaps-key">API key</Label>
-              <Input
-                id="gmaps-key"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="AIza..."
-                autoComplete="off"
-              />
-              <p className="text-xs text-muted-foreground">
-                Get one at{" "}
-                <a
-                  href="https://console.cloud.google.com/google/maps-apis/credentials"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand hover:underline"
-                >
-                  Google Cloud Console
-                </a>
-                .
-              </p>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={save}>Save</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {!apiKey && (
+          <Link
+            to="/settings"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="h-3 w-3" /> Add API key
+          </Link>
+        )}
       </div>
     </div>
   );
 }
+

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
   id: '/leads',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
   '/filings/': typeof AuthenticatedFilingsIndexRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
   '/filings': typeof AuthenticatedFilingsIndexRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
   '/_authenticated/filings/': typeof AuthenticatedFilingsIndexRoute
 }
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/import'
     | '/leads'
+    | '/settings'
     | '/filings/$jobNumber'
     | '/filings/'
   fileRoutesByTo: FileRoutesByTo
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/import'
     | '/leads'
+    | '/settings'
     | '/filings/$jobNumber'
     | '/filings'
   id:
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/import'
     | '/_authenticated/leads'
+    | '/_authenticated/settings'
     | '/_authenticated/filings/$jobNumber'
     | '/_authenticated/filings/'
   fileRoutesById: FileRoutesById
@@ -148,6 +160,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leads': {
       id: '/_authenticated/leads'
@@ -191,6 +210,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedFilingsJobNumberRoute: typeof AuthenticatedFilingsJobNumberRoute
   AuthenticatedFilingsIndexRoute: typeof AuthenticatedFilingsIndexRoute
 }
@@ -199,6 +219,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedFilingsJobNumberRoute: AuthenticatedFilingsJobNumberRoute,
   AuthenticatedFilingsIndexRoute: AuthenticatedFilingsIndexRoute,
 }
@@ -214,3 +235,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
