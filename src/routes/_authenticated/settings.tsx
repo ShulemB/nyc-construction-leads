@@ -22,6 +22,16 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const [mapsKey, setMapsKey] = useState("");
   const [input, setInput] = useState("");
+  const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const signOut = async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
 
   useEffect(() => {
     const k = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) ?? "" : "";
