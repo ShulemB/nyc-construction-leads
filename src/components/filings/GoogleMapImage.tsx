@@ -77,29 +77,6 @@ export function GoogleMapImage({
           </Link>
         </div>
       )}
-
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2 text-xs">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" />
-          <span className="truncate max-w-[50ch]">{addrString}</span>
-          <a
-            href={mapsLink}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-brand hover:underline"
-          >
-            Open in Google Maps <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-        {!apiKey && (
-          <Link
-            to="/settings"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <Settings className="h-3 w-3" /> Add API key
-          </Link>
-        )}
-      </div>
     </div>
   );
 }
