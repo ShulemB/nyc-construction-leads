@@ -90,7 +90,7 @@ function FilingDetail() {
             <Field label="Job status">{f.job_status_description ?? f.job_status}</Field>
             <Field label="Borough">{f.borough}</Field>
             
-            <Field label="House / Street">{[f.house_number, f.street_name].filter(Boolean).join(" ")}</Field>
+            
             <Field label="BIN">{f.bin_number}</Field>
             <Field label="BBL">{f.bbl}</Field>
             <Field label="Block / Lot">{[f.block, f.lot].filter(Boolean).join(" / ")}</Field>
