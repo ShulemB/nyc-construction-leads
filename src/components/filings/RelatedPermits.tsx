@@ -234,8 +234,8 @@ export function RelatedPermits({ permits }: { permits: Permit[] }) {
             {filtered.map((p) => {
               const isOpen = expanded.has(p.id);
               return (
-                <>
-                  <tr key={p.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => toggle(p.id)}>
+                <Fragment key={p.id}>
+                  <tr className="hover:bg-muted/30 cursor-pointer" onClick={() => toggle(p.id)}>
                     <td className="px-2 text-muted-foreground">
                       {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </td>
@@ -246,13 +246,13 @@ export function RelatedPermits({ permits }: { permits: Permit[] }) {
                     ))}
                   </tr>
                   {isOpen && (
-                    <tr key={p.id + "-d"}>
+                    <tr>
                       <td colSpan={TABLE_COLS.length + 1} className="p-0">
                         <PermitDetail p={p} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
