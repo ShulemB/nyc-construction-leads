@@ -1,13 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Key, ExternalLink } from "lucide-react";
+import { Key, ExternalLink, Moon, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/hooks/use-theme";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const STORAGE_KEY = "google_maps_api_key";
 
@@ -19,6 +22,16 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const [mapsKey, setMapsKey] = useState("");
   const [input, setInput] = useState("");
+  const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const signOut = async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
 
   useEffect(() => {
     const k = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) ?? "" : "";
@@ -96,6 +109,41 @@ function SettingsPage() {
                   Key is set and active.
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Moon className="h-4 w-4 text-muted-foreground" />
+                Appearance
+              </CardTitle>
+              <CardDescription>Toggle between light and dark theme.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="dark-mode" className="text-sm">Dark mode</Label>
+                <Switch
+                  id="dark-mode"
+                  checked={theme === "dark"}
+                  onCheckedChange={(c) => setTheme(c ? "dark" : "light")}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <LogOut className="h-4 w-4 text-muted-foreground" />
+                Account
+              </CardTitle>
+              <CardDescription>Sign out of your account on this device.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="h-4 w-4" /> Sign out
+              </Button>
             </CardContent>
           </Card>
         </div>
