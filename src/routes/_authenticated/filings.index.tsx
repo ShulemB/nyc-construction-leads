@@ -115,7 +115,7 @@ function FilingsList() {
   return (
     <AppShell>
       <div className="border-b border-border bg-card/30 px-8 py-6">
-        <h1 className="font-display text-2xl font-bold">Filings</h1>
+        <h1 className="font-display text-2xl font-bold">Job Application Filing</h1>
         <p className="text-sm text-muted-foreground">Search and filter NYC DOB permit filings</p>
       </div>
 

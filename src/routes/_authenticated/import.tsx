@@ -166,7 +166,7 @@ function ImportPage() {
     <AppShell>
       <div className="border-b border-border bg-card/30 px-8 py-6">
         <h1 className="font-display text-2xl font-bold">Import</h1>
-        <p className="text-sm text-muted-foreground">Upload NYC DOB data — Job Applications or Approved Permits</p>
+        <p className="text-sm text-muted-foreground">Upload NYC DOB data — Job Application Filing or Approved Permits</p>
       </div>
 
       <div className="grid gap-6 p-8 lg:grid-cols-2">
@@ -177,7 +177,7 @@ function ImportPage() {
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "jobs" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
               disabled={busy}
             >
-              Job Applications
+              Job Application Filing
             </button>
             <button
               onClick={() => switchMode("permits")}
@@ -189,7 +189,7 @@ function ImportPage() {
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
-            {mode === "jobs" ? "Upload Job Applications CSV" : "Upload Approved Permits (.csv or .xlsx)"}
+            {mode === "jobs" ? "Upload Job Application Filing CSV" : "Upload Approved Permits (.csv or .xlsx)"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "jobs" ? (
