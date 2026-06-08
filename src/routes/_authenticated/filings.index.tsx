@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -13,9 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+const SORTS = ["lead_score", "latest_action_date", "initial_cost"] as const;
+type Sort = (typeof SORTS)[number];
+
 const searchSchema = z.object({
-  q: z.string().optional(),
-  newOnly: z.boolean().optional(),
+  q: z.string().optional().catch(undefined),
+  boroughs: z.array(z.string()).optional().catch(undefined),
+  jobTypes: z.array(z.string()).optional().catch(undefined),
+  workTypes: z.array(z.string()).optional().catch(undefined),
+  newOnly: z.boolean().optional().catch(undefined),
+  sort: z.enum(SORTS).optional().catch(undefined),
+  page: z.number().int().min(1).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/_authenticated/filings/")({
@@ -25,14 +33,60 @@ export const Route = createFileRoute("/_authenticated/filings/")({
 });
 
 function FilingsList() {
-  const initial = Route.useSearch();
-  const [q, setQ] = useState(initial.q ?? "");
-  const [boroughs, setBoroughs] = useState<string[]>([]);
-  const [jobTypes, setJobTypes] = useState<string[]>([]);
-  const [workTypes, setWorkTypes] = useState<string[]>([]);
-  const [newOnly, setNewOnly] = useState(initial.newOnly ?? false);
-  const [sort, setSort] = useState<"lead_score" | "latest_action_date" | "initial_cost">("lead_score");
-  const [page, setPage] = useState(1);
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const q = search.q ?? "";
+  const boroughs = search.boroughs ?? [];
+  const jobTypes = search.jobTypes ?? [];
+  const workTypes = search.workTypes ?? [];
+  const newOnly = search.newOnly ?? false;
+  const sort: Sort = search.sort ?? "lead_score";
+  const page = search.page ?? 1;
+
+  // Local input mirror for debouncing search text
+  const [qInput, setQInput] = useState(q);
+  useEffect(() => { setQInput(q); }, [q]);
+  useEffect(() => {
+    if (qInput === q) return;
+    const t = setTimeout(() => {
+      navigate({
+        search: (prev: Record<string, unknown>) => ({ ...prev, q: qInput || undefined, page: undefined }),
+        replace: true,
+      });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [qInput, q, navigate]);
+
+
+  const update = (
+    patch: Partial<{
+      boroughs: string[]; jobTypes: string[]; workTypes: string[];
+      newOnly: boolean; sort: Sort; page: number;
+    }>,
+    opts?: { keepPage?: boolean }
+  ) => {
+    navigate({
+      search: (prev: Record<string, unknown>) => {
+        const next: Record<string, unknown> = { ...prev, ...patch };
+        // Normalize empty arrays / defaults out of the URL
+        if (Array.isArray(next.boroughs) && next.boroughs.length === 0) next.boroughs = undefined;
+        if (Array.isArray(next.jobTypes) && next.jobTypes.length === 0) next.jobTypes = undefined;
+        if (Array.isArray(next.workTypes) && next.workTypes.length === 0) next.workTypes = undefined;
+        if (next.newOnly === false) next.newOnly = undefined;
+        if (next.sort === "lead_score") next.sort = undefined;
+        if (!opts?.keepPage) next.page = undefined;
+        return next;
+      },
+    });
+  };
+
+  const clearAll = () => navigate({ search: {} });
+
+  const toggle = (arr: string[], v: string, key: "boroughs" | "jobTypes" | "workTypes") => {
+    const nextArr = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+    update({ [key]: nextArr } as never);
+  };
 
   const fn = useServerFn(listFilings);
   const qc = useQueryClient();
@@ -50,13 +104,13 @@ function FilingsList() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const toggle = (arr: string[], v: string, set: (a: string[]) => void) => {
-    set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-    setPage(1);
-  };
-
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / 50));
+
+  const activeCount =
+    boroughs.length + jobTypes.length + workTypes.length +
+    (q ? 1 : 0) + (newOnly ? 1 : 0) + (sort !== "lead_score" ? 1 : 0);
+  const hasFilters = activeCount > 0;
 
   return (
     <AppShell>
@@ -67,39 +121,64 @@ function FilingsList() {
 
       <div className="space-y-4 p-8">
         {/* Search */}
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by address, owner, business, job #, description..."
-            value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
-            className="pl-9 text-base"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by address, owner, business, job #, description..."
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              className="pl-9 text-base"
+            />
+          </div>
+          {hasFilters && (
+            <Button variant="destructive" onClick={clearAll} className="shrink-0">
+              <X className="mr-1 h-4 w-4" />
+              Clear filters ({activeCount})
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
-        <div className="grid gap-4 rounded-xl border border-border bg-card p-4 md:grid-cols-3">
-          <FilterGroup label="Borough">
-            {BOROUGHS.map((b) => (
-              <Chip key={b} active={boroughs.includes(b)} onClick={() => toggle(boroughs, b, setBoroughs)}>{b}</Chip>
-            ))}
-          </FilterGroup>
-          <FilterGroup label="Job Type">
-            {JOB_TYPES.map((t) => (
-              <Chip key={t} active={jobTypes.includes(t)} onClick={() => toggle(jobTypes, t, setJobTypes)}>{t}</Chip>
-            ))}
-          </FilterGroup>
-          <FilterGroup label="Work Type">
-            {WORK_TYPES.map((w) => (
-              <Chip key={w.key} active={workTypes.includes(w.key)} onClick={() => toggle(workTypes, w.key, setWorkTypes)}>{w.label}</Chip>
-            ))}
-          </FilterGroup>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Filters{hasFilters ? ` (${activeCount})` : ""}
+            </span>
+            {hasFilters && (
+              <button onClick={clearAll} className="text-xs text-brand hover:underline">
+                Clear all
+              </button>
+            )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <FilterGroup label="Borough">
+              {BOROUGHS.map((b) => (
+                <Chip key={b} active={boroughs.includes(b)} onClick={() => toggle(boroughs, b, "boroughs")}>{b}</Chip>
+              ))}
+            </FilterGroup>
+            <FilterGroup label="Job Type">
+              {JOB_TYPES.map((t) => (
+                <Chip key={t} active={jobTypes.includes(t)} onClick={() => toggle(jobTypes, t, "jobTypes")}>{t}</Chip>
+              ))}
+            </FilterGroup>
+            <FilterGroup label="Work Type">
+              {WORK_TYPES.map((w) => (
+                <Chip key={w.key} active={workTypes.includes(w.key)} onClick={() => toggle(workTypes, w.key, "workTypes")}>{w.label}</Chip>
+              ))}
+            </FilterGroup>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={newOnly} onChange={(e) => { setNewOnly(e.target.checked); setPage(1); }} className="h-4 w-4 rounded border-border" />
+              <input
+                type="checkbox"
+                checked={newOnly}
+                onChange={(e) => update({ newOnly: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
               New this sync only
             </label>
             <span className="text-muted-foreground">
@@ -108,7 +187,11 @@ function FilingsList() {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Sort:</span>
-            <select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="rounded-md border border-input bg-card px-2 py-1.5 text-sm">
+            <select
+              value={sort}
+              onChange={(e) => update({ sort: e.target.value as Sort })}
+              className="rounded-md border border-input bg-card px-2 py-1.5 text-sm"
+            >
               <option value="lead_score">Lead score</option>
               <option value="latest_action_date">Latest action</option>
               <option value="initial_cost">Estimated cost</option>
@@ -157,8 +240,8 @@ function FilingsList() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Page {page} of {totalPages}</span>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-              <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => update({ page: page - 1 }, { keepPage: true })}><ChevronLeft className="h-4 w-4" /></Button>
+              <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => update({ page: page + 1 }, { keepPage: true })}><ChevronRight className="h-4 w-4" /></Button>
             </div>
           </div>
         )}

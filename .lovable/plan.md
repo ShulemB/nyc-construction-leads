@@ -1,84 +1,51 @@
-## Add DOB NOW Approved Permits Import & Unified Filing View
+# Preserve Filings Filters & Add Clear Filters
 
-### 1. Database (migration)
+Move all Filings-list state into URL search params so it persists across navigation (Filings → Filing Detail → back), is bookmarkable/shareable, and supports a clear-all action.
 
-New table `public.approved_permits` with all key DOB NOW Build Approved Permits columns:
+## Scope
+Only `src/routes/_authenticated/filings.index.tsx`. No backend or server-fn changes — `listFilings` already accepts these params.
 
-- Identity: `work_permit`, `sequence_number`, `tracking_number`, `job_filing_number`
-- Location: `bin`, `bbl`, `borough`, `house_no`, `street_name`, `block`, `lot`, `c_b_no`
-- Permit data: `filing_status`, `permit_status`, `filing_reason`, `work_type`, `permit_type`, `permit_subtype`, `work_on_floor`, `work_retaining_wall`
-- Dates: `issued_date`, `approved_date`, `expired_date`, `job_start_date`
-- Cost/scope: `estimated_job_costs`
-- People: `owner_business_name`, `owner_name`, `applicant_first_name`, `applicant_last_name`, `applicant_business_name`, `applicant_license_number`, `applicant_professional_title`
-- Source: `raw` JSONB (all other fields), `last_synced_at`, `data_source`
-- Linking: `matched_job_number` (text, nullable), `match_status` text ('matched'|'unmatched'|'ambiguous'), `match_method` text ('job_filing_number'|'bin'|'bbl'|null), `match_candidates` jsonb (for ambiguous)
+Note: a few requested fields don't exist in the current UI yet (Permit Status, Filing Date range, Page Size selector, Column visibility). Per "only change what was asked," I'll wire up state-preservation + Clear for what's on the page today (search, boroughs, job types, work types, new-only, sort, page) and add the **scroll position** restore. I will NOT invent Permit Status / date-range / column-visibility controls in this pass — flag them as a follow-up if you want them built.
 
-Constraints:
-- Unique on `(work_permit, sequence_number)` when both not null
-- Unique on `tracking_number` when work_permit null
-- Implement via two partial unique indexes
+## Changes
 
-Indexes on filings table: `job_number`, `bin_number`, `bbl` (already exist via pg_trgm? Add btree if missing).
-Indexes on approved_permits: `work_permit`, `tracking_number`, `job_filing_number`, `bin`, `bbl`, `matched_job_number`, `match_status`.
+### 1. Expand `validateSearch` (Zod) to cover all filter state
+Fields stored in URL with `fallback(...)` defaults so empty defaults stay out of the URL:
+- `q: string`
+- `boroughs: string[]`
+- `jobTypes: string[]`
+- `workTypes: string[]`
+- `newOnly: boolean`
+- `sort: "lead_score" | "latest_action_date" | "initial_cost"` (default `lead_score`)
+- `page: number` (default 1)
 
-GRANTs + RLS: authenticated select + admin only writes (writes through service role in serverFn).
+### 2. Replace `useState` with URL-driven reads/writes
+- Read: `const search = Route.useSearch();`
+- Write: `const navigate = useNavigate({ from: Route.fullPath });` then `navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })`. Use `replace` for keystrokes (search input) to avoid history spam; use push for filter chips / sort / pagination so Back returns to previous filter state.
+- Debounce `q` (~250ms) before pushing to URL to avoid a history entry per keystroke.
 
-Also extend `sync_log.source` usage with new value `permits_csv_upload`.
+### 3. Scroll restoration
+TanStack Router already restores scroll on back-nav when `scrollRestoration` is enabled on the router. Verify `src/router.tsx` sets `scrollRestoration: true`; if not, enable it. No per-route code needed.
 
-### 2. Backend code
+### 4. Active-filter indicator + Clear Filters button
+- Compute `activeCount` = boroughs.length + jobTypes.length + workTypes.length + (q ? 1 : 0) + (newOnly ? 1 : 0) + (sort !== "lead_score" ? 1 : 0).
+- When `activeCount > 0`, render a toolbar row above the results:
+  - Label: `Filters ({activeCount})`
+  - Button: **Clear filters** (primary/destructive styling so it stands out) — calls `navigate({ search: {} })` which resets everything to defaults and returns to page 1.
+- Add a smaller "Clear all" text-link inside the filter card header (same handler) for quick access.
 
-**`src/lib/ingest/normalizePermit.ts`** — maps DOB NOW Approved Permits CSV row to permit record. Handles field aliases (Work Permit, Job Filing Number, BIN, BBL, etc.). Parses dates and money.
+### 5. Detail page back-link
+Filing Detail's back button (if any) should use router back or `<Link to="/filings">` without an explicit empty `search` so existing URL params remain when the user uses browser back. Verify the detail page doesn't force-navigate with `search: {}`.
 
-**`src/lib/permits.functions.ts`**:
-- `ingestPermitBatch` (mirrors `ingestBatch`): upsert into approved_permits using two strategies:
-  - For rows with work_permit + sequence_number → upsert on that pair
-  - For rows with only tracking_number → upsert on tracking_number
-  Then run match resolution for each row:
-  1. If `job_filing_number` matches a `filings.job_number` → matched, method=job_filing_number
-  2. Else find filings by bin: if exactly one distinct job_number → matched, if multiple → ambiguous
-  3. Else by bbl: same logic
-  4. Else unmatched
-- `listPermitsByJob(jobNumber)` — fetch related permits for filing detail
-- `permitImportStats(syncLogId)` — return processed/added/updated/matched/unmatched/ambiguous/duplicates/errors
+## Technical notes
+- All param updates go through one helper `update(patch)` to keep call sites clean.
+- Array params via Zod: `fallback(z.array(z.string()), []).default([])` — empty arrays serialize cleanly.
+- Page resets to 1 on any filter/sort/search change inside `update()`.
 
-**Extend `src/lib/filings.functions.ts`**:
-- Extend `listFilings` search `or(...)` to also union-search approved_permits then return parent filings. Simplest: also query approved_permits by the same term and pull `matched_job_number`s, then OR into the filings query (`job_number.in.(...)`).
-- Add permit fields to detail: modify `getFiling` to also return related permits (call permits function or join).
+## Out of scope (call out for follow-up)
+- Permit Status filter (no field/UI today)
+- Filing Date range picker (no UI today)
+- Page-size selector (hardcoded 50)
+- Column visibility (list view, no columns to toggle)
 
-### 3. Frontend
-
-**Import page (`src/routes/_authenticated/import.tsx`)**:
-- Add tabs / mode toggle: "Job Applications" | "Approved Permits"
-- On permits mode use `ingestPermitBatch` and parse with Papa (CSV) or SheetJS (XLSX). Add `xlsx` dep for .xlsx support — convert to row objects then funnel through same batching.
-- Show extended stats: processed, added, updated, matched, unmatched, ambiguous, duplicates ignored, errors.
-
-**Filing detail (`src/routes/_authenticated/filings.$jobNumber.tsx`)**:
-- After existing filing info, render "Related Approved Permits" section
-- 0 permits → hide / "no permits yet"
-- 1 permit → render details card
-- 2+ → sortable table with columns (Work Permit, Sequence #, Status, Filing Reason, Work Type, Approved, Issued, Expired, Est. Cost, Tracking #) with simple sort + filter input
-
-**Search**: filings list page already searches filings; results page links to detail which now shows permits. Update server `listFilings` to also pull `matched_job_number` matches from approved_permits when search term is provided so a Work Permit / Tracking # search surfaces the parent filing.
-
-### 4. Dependencies
-
-`bun add xlsx` for .xlsx parsing.
-
-### 5. Future-proofing notes
-
-- `approved_permits.match_method` enum-like text and `match_candidates` jsonb let future datasets reuse the same pattern.
-- Filing Detail uses a generic "Related Datasets" section; permits is the first implementation, others can be appended later.
-
-### Files to create
-- `supabase/migrations/<new>.sql`
-- `src/lib/ingest/normalizePermit.ts`
-- `src/lib/permits.functions.ts`
-- `src/components/filings/RelatedPermits.tsx`
-
-### Files to edit
-- `src/lib/filings.functions.ts` (search + getFiling)
-- `src/routes/_authenticated/import.tsx` (tabs + XLSX + permits mode)
-- `src/routes/_authenticated/filings.$jobNumber.tsx` (render RelatedPermits)
-- `package.json` (xlsx)
-
-Confirm to proceed and I'll ship it.
+Want me to also add those new controls in this pass, or ship state-preservation + Clear Filters first?
