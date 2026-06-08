@@ -111,6 +111,41 @@ function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Moon className="h-4 w-4 text-muted-foreground" />
+                Appearance
+              </CardTitle>
+              <CardDescription>Toggle between light and dark theme.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="dark-mode" className="text-sm">Dark mode</Label>
+                <Switch
+                  id="dark-mode"
+                  checked={theme === "dark"}
+                  onCheckedChange={(c) => setTheme(c ? "dark" : "light")}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <LogOut className="h-4 w-4 text-muted-foreground" />
+                Account
+              </CardTitle>
+              <CardDescription>Sign out of your account on this device.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="h-4 w-4" /> Sign out
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppShell>
