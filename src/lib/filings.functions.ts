@@ -23,7 +23,7 @@ export const listFilings = createServerFn({ method: "POST" })
     const from = (data.page - 1) * data.pageSize;
     const to = from + data.pageSize - 1;
 
-    let q = supabase.from("filings").select("*", { count: "exact" });
+    let q = supabase.from("job_application_filings").select("*", { count: "exact" });
 
     if (data.q && data.q.trim()) {
       const term = data.q.trim().replace(/[%_]/g, "");
@@ -74,7 +74,7 @@ export const getFiling = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ jobNumber: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
-      .from("filings")
+      .from("job_application_filings")
       .select("*")
       .eq("job_number", data.jobNumber)
       .order("doc_number", { ascending: true, nullsFirst: true });
@@ -88,11 +88,11 @@ export const dashboardStats = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
 
     const [total, newCount, leadCount, recent] = await Promise.all([
-      supabase.from("filings").select("*", { count: "exact", head: true }),
-      supabase.from("filings").select("*", { count: "exact", head: true }).eq("is_new_this_sync", true),
+      supabase.from("job_application_filings").select("*", { count: "exact", head: true }),
+      supabase.from("job_application_filings").select("*", { count: "exact", head: true }).eq("is_new_this_sync", true),
       supabase.from("leads").select("*", { count: "exact", head: true }).eq("user_id", userId),
       supabase
-        .from("filings")
+        .from("job_application_filings")
         .select("id,job_number,full_address,borough,job_type,job_type_label,initial_cost,latest_action_date,lead_score")
         .eq("is_new_this_sync", true)
         .order("lead_score", { ascending: false })

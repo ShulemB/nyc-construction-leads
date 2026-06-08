@@ -25,7 +25,7 @@ export const ingestBatch = createServerFn({ method: "POST" })
 
     // On first batch: reset is_new_this_sync flag and create a sync log entry
     if (data.isFirstBatch) {
-      await supabaseAdmin.from("filings").update({ is_new_this_sync: false }).eq("is_new_this_sync", true);
+      await supabaseAdmin.from("job_application_filings").update({ is_new_this_sync: false }).eq("is_new_this_sync", true);
 
       const { data: log, error: logErr } = await supabaseAdmin
         .from("sync_log")
@@ -51,7 +51,7 @@ export const ingestBatch = createServerFn({ method: "POST" })
     }));
     const jobNums = [...new Set(keys.map((k) => k.job_number))];
     const { data: existing } = await supabaseAdmin
-      .from("filings")
+      .from("job_application_filings")
       .select("job_number,doc_number")
       .in("job_number", jobNums);
 
@@ -73,11 +73,11 @@ export const ingestBatch = createServerFn({ method: "POST" })
 
     let errored = 0;
     if (newRows.length) {
-      const { error } = await supabaseAdmin.from("filings").upsert(newRows as never, { onConflict: "job_number,doc_number" });
+      const { error } = await supabaseAdmin.from("job_application_filings").upsert(newRows as never, { onConflict: "job_number,doc_number" });
       if (error) { errored += newRows.length; console.error("[ingest new]", error); }
     }
     if (updRows.length) {
-      const { error } = await supabaseAdmin.from("filings").upsert(updRows as never, { onConflict: "job_number,doc_number" });
+      const { error } = await supabaseAdmin.from("job_application_filings").upsert(updRows as never, { onConflict: "job_number,doc_number" });
       if (error) { errored += updRows.length; console.error("[ingest upd]", error); }
     }
 

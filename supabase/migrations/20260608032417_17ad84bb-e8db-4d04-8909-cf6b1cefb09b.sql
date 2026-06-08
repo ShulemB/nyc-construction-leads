@@ -1,0 +1,1 @@
+ALTER TABLE public.filings RENAME TO job_application_filings;

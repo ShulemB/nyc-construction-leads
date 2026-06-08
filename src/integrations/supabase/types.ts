@@ -149,7 +149,7 @@ export type Database = {
         }
         Relationships: []
       }
-      filings: {
+      job_application_filings: {
         Row: {
           adult_estab: boolean | null
           applicant_first_name: string | null
@@ -506,7 +506,7 @@ export type Database = {
             foreignKeyName: "leads_filing_id_fkey"
             columns: ["filing_id"]
             isOneToOne: false
-            referencedRelation: "filings"
+            referencedRelation: "job_application_filings"
             referencedColumns: ["id"]
           },
         ]

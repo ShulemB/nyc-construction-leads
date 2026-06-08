@@ -74,13 +74,13 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
 
     const [jobRes, binRes, bblRes] = await Promise.all([
       jobNums.length
-        ? supabaseAdmin.from("filings").select("job_number").in("job_number", jobNums)
+        ? supabaseAdmin.from("job_application_filings").select("job_number").in("job_number", jobNums)
         : Promise.resolve({ data: [] as { job_number: string }[] }),
       bins.length
-        ? supabaseAdmin.from("filings").select("job_number,bin_number").in("bin_number", bins)
+        ? supabaseAdmin.from("job_application_filings").select("job_number,bin_number").in("bin_number", bins)
         : Promise.resolve({ data: [] as { job_number: string; bin_number: string }[] }),
       bbls.length
-        ? supabaseAdmin.from("filings").select("job_number,bbl").in("bbl", bbls)
+        ? supabaseAdmin.from("job_application_filings").select("job_number,bbl").in("bbl", bbls)
         : Promise.resolve({ data: [] as { job_number: string; bbl: string }[] }),
     ]);
 
@@ -179,14 +179,14 @@ async function resolveMatch(
 ): Promise<{ matched_job_number: string | null; match_status: string; match_method: string | null; match_candidates: unknown }> {
   // Priority 1: job_filing_number → filings.job_number
   if (r.job_filing_number) {
-    const { data } = await db.from("filings").select("job_number").eq("job_number", r.job_filing_number).limit(2);
+    const { data } = await db.from("job_application_filings").select("job_number").eq("job_number", r.job_filing_number).limit(2);
     if (data && data.length >= 1) {
       return { matched_job_number: r.job_filing_number, match_status: "matched", match_method: "job_filing_number", match_candidates: null };
     }
   }
   // Priority 2: bin
   if (r.bin) {
-    const { data } = await db.from("filings").select("job_number").eq("bin_number", r.bin).limit(50);
+    const { data } = await db.from("job_application_filings").select("job_number").eq("bin_number", r.bin).limit(50);
     const unique = [...new Set((data ?? []).map((d) => d.job_number).filter(Boolean))] as string[];
     if (unique.length === 1) {
       return { matched_job_number: unique[0], match_status: "matched", match_method: "bin", match_candidates: null };
@@ -197,7 +197,7 @@ async function resolveMatch(
   }
   // Priority 3: bbl
   if (r.bbl) {
-    const { data } = await db.from("filings").select("job_number").eq("bbl", r.bbl).limit(50);
+    const { data } = await db.from("job_application_filings").select("job_number").eq("bbl", r.bbl).limit(50);
     const unique = [...new Set((data ?? []).map((d) => d.job_number).filter(Boolean))] as string[];
     if (unique.length === 1) {
       return { matched_job_number: unique[0], match_status: "matched", match_method: "bbl", match_candidates: null };
