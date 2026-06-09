@@ -98,7 +98,13 @@ function PropertyDetail() {
       <div className="grid gap-6 p-8 lg:grid-cols-[minmax(280px,30%)_1fr]">
         <PropertyInfoCard property={property} />
 
-        <section className="space-y-3">
+        <section className="space-y-6">
+          <GoogleMapImage
+            houseNumber={property.house_number}
+            streetName={property.street_name}
+            borough={property.borough}
+            address={[property.house_number, property.street_name, property.borough].filter(Boolean).join(" ")}
+          />
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Activity timeline</h2>
             <p className="text-xs text-muted-foreground">{filings.length} filings · {permits.length} permits · sorted by latest activity</p>
