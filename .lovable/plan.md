@@ -1,51 +1,62 @@
-# Preserve Filings Filters & Add Clear Filters
+# Property-centric restructure
 
-Move all Filings-list state into URL search params so it persists across navigation (Filings → Filing Detail → back), is bookmarkable/shareable, and supports a clear-all action.
+Translating the Next.js/Prisma spec to this stack (TanStack Start + Supabase). Per your answers: **wipe existing imported data**, and **re-tie leads to properties** (Lead.bin instead of Lead.jobNumber).
 
-## Scope
-Only `src/routes/_authenticated/filings.index.tsx`. No backend or server-fn changes — `listFilings` already accepts these params.
+## 1. Database migration (single migration)
 
-Note: a few requested fields don't exist in the current UI yet (Permit Status, Filing Date range, Page Size selector, Column visibility). Per "only change what was asked," I'll wire up state-preservation + Clear for what's on the page today (search, boroughs, job types, work types, new-only, sort, page) and add the **scroll position** restore. I will NOT invent Permit Status / date-range / column-visibility controls in this pass — flag them as a follow-up if you want them built.
+- **DROP** `job_application_filings`, `approved_permits`, `leads` (current schema). Keep `dob_license_info`, `profiles`, `sync_log` as-is.
+- **CREATE `properties`** keyed by `bin` (text PK). Address, geo, building characteristics, owner fields — all the columns from the spec's `Property` model, snake_cased.
+- **CREATE `job_application_filings`** with `bin text NOT NULL` FK → `properties(bin)`, `job_number text UNIQUE`, all filing fields from the spec, `lead_score int`, indices on `(bin, latest_action_date, applicant_license, job_type, job_status)`.
+- **CREATE `approved_permits`** with `bin text NOT NULL` FK → `properties(bin)`, `work_permit text UNIQUE`, all permit fields, indices on `(bin, issued_date, applicant_license, work_type, permit_status)`.
+- **CREATE `leads`** with `bin text NOT NULL` FK → `properties(bin)` UNIQUE per user, `user_id`, `status`, `notes`, timestamps.
+- All four tables: `GRANT` to authenticated + service_role, RLS enabled, policies (properties/filings/permits readable by any authenticated user; leads scoped to `auth.uid()`), `updated_at` trigger using existing `public.set_updated_at()`.
 
-## Changes
+## 2. Server-side code
 
-### 1. Expand `validateSearch` (Zod) to cover all filter state
-Fields stored in URL with `fallback(...)` defaults so empty defaults stay out of the URL:
-- `q: string`
-- `boroughs: string[]`
-- `jobTypes: string[]`
-- `workTypes: string[]`
-- `newOnly: boolean`
-- `sort: "lead_score" | "latest_action_date" | "initial_cost"` (default `lead_score`)
-- `page: number` (default 1)
+- **Rewrite** `src/lib/ingest/normalize.ts` to export `normalizePropertyFromFiling`, `normalizePropertyFromPermit`, `normalizeFilingRow`, `normalizePermitRow` (snake_case keys matching the new columns). Keep `computeLeadScore` integration.
+- **Rewrite** `src/lib/ingest/normalizeLicense.ts` — already mostly right, just keep.
+- **Delete** `src/lib/ingest/normalizePermit.ts` (folded into `normalize.ts`).
+- **Rewrite** `src/lib/filings.functions.ts` → `src/lib/properties.functions.ts`:
+  - `ingestFilingBatch` — upsert property first (full overwrite), then upsert filing on `job_number`.
+  - `ingestPermitBatch` — upsert property (only address/geo, preserve building chars via `coalesce`), then upsert permit on `work_permit`.
+  - `listProperties({ page, limit, borough, search })` — paginated with filing/permit counts + most-recent filing/permit summary.
+  - `getProperty({ bin })` — full property + all filings + all permits + license map → unified timeline.
+  - `getImportStatus()` — counts + last imported for properties, filings, permits, licenses.
+- **Rewrite** `src/lib/leads.functions.ts` — keyed by `bin` instead of `filing_id`. `addLead({bin})`, `listLeads`, `updateLead`, `removeLead`. Lead includes property + latest filing.
+- **Update** `src/lib/permits.functions.ts` — simplify to just `listPermitsByBin` (no more match-status fallback; FK guarantees the join).
 
-### 2. Replace `useState` with URL-driven reads/writes
-- Read: `const search = Route.useSearch();`
-- Write: `const navigate = useNavigate({ from: Route.fullPath });` then `navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })`. Use `replace` for keystrokes (search input) to avoid history spam; use push for filter chips / sort / pagination so Back returns to previous filter state.
-- Debounce `q` (~250ms) before pushing to URL to avoid a history entry per keystroke.
+## 3. UI
 
-### 3. Scroll restoration
-TanStack Router already restores scroll on back-nav when `scrollRestoration` is enabled on the router. Verify `src/router.tsx` sets `scrollRestoration: true`; if not, enable it. No per-route code needed.
+- **New route** `src/routes/_authenticated/properties.index.tsx` — list page (rows: address, owner, filing/permit count badges, latest job type/status, latest action date, lead score dot, +Lead button). Replaces `/filings`.
+- **New route** `src/routes/_authenticated/properties.$bin.tsx` — two-panel detail:
+  - Left 30%: PropertyInfoCard (Address / Building / Owner / Geo sections, render only non-null).
+  - Right 70%: unified timeline. Each entry collapsed → expand to grouped fields (Filing groups 1-6 + License sub-card; Permit groups 1-6 + License sub-card). Color-coded left border (blue/orange).
+- **New component** `src/components/properties/PropertyInfoCard.tsx`.
+- **New component** `src/components/properties/TimelineEntry.tsx` (collapsible, renders filing vs permit body).
+- **Reuse** `ApplicantLicensePanel` as the License sub-card inside expanded entries.
+- **Rewrite** `src/routes/_authenticated/leads.tsx` to link to `/properties/$bin` and show property address.
+- **Update** `src/routes/_authenticated/import.tsx` — 3 cards (Filings / Permits / License) calling the new server fns; show Property count too.
+- **Update** `src/routes/_authenticated/dashboard.tsx` — swap any filing-centric queries to property-centric.
+- **Delete** `src/routes/_authenticated/filings.index.tsx`, `src/routes/_authenticated/filings.$jobNumber.tsx`, `src/components/filings/RelatedPermits.tsx` (folded into timeline).
+- **Update** sidebar in `src/components/layout/AppShell.tsx` — "Filings" → "Properties" pointing at `/properties`.
+- **Update** `src/routeTree.gen.ts` is auto-regenerated by the Vite plugin; no manual edit.
 
-### 4. Active-filter indicator + Clear Filters button
-- Compute `activeCount` = boroughs.length + jobTypes.length + workTypes.length + (q ? 1 : 0) + (newOnly ? 1 : 0) + (sort !== "lead_score" ? 1 : 0).
-- When `activeCount > 0`, render a toolbar row above the results:
-  - Label: `Filters ({activeCount})`
-  - Button: **Clear filters** (primary/destructive styling so it stands out) — calls `navigate({ search: {} })` which resets everything to defaults and returns to page 1.
-- Add a smaller "Clear all" text-link inside the filter card header (same handler) for quick access.
+## 4. Cleanup
 
-### 5. Detail page back-link
-Filing Detail's back button (if any) should use router back or `<Link to="/filings">` without an explicit empty `search` so existing URL params remain when the user uses browser back. Verify the detail page doesn't force-navigate with `search: {}`.
+- Remove `sync_log` references to filing-specific sources where stale.
+- Map component (`GoogleMapImage`) takes lat/lng from property now.
 
-## Technical notes
-- All param updates go through one helper `update(patch)` to keep call sites clean.
-- Array params via Zod: `fallback(z.array(z.string()), []).default([])` — empty arrays serialize cleanly.
-- Page resets to 1 on any filter/sort/search change inside `update()`.
+## What you'll see
 
-## Out of scope (call out for follow-up)
-- Permit Status filter (no field/UI today)
-- Filing Date range picker (no UI today)
-- Page-size selector (hardcoded 50)
-- Column visibility (list view, no columns to toggle)
+After approval:
+1. Migration runs (drops existing filings/permits/leads, creates new schema). **Your existing imports will be gone.**
+2. Code changes ship.
+3. Go to `/import` and re-upload your three CSVs in any order. Properties auto-populate from filings + permits as you import.
+4. `/properties` shows the new list; clicking a row opens the two-panel detail with the unified timeline.
 
-Want me to also add those new controls in this pass, or ship state-preservation + Clear Filters first?
+## Notes / deviations from the spec
+
+- "Prisma" → Supabase migration + serverFns. No `app/api/*` routes; everything goes through `createServerFn` (existing pattern). Webhooks aren't needed here.
+- `Property.bin` is the PK directly (text), not a synthetic `id` + unique `bin` — simpler joins, matches how the rest of the code already keys on BIN.
+- All fields kept as `text` per spec (even numerics like stories/height) since DOB data is messy.
+- Filings without a BIN are skipped during import (FK requires it). I'll surface the skipped count in the import result.
