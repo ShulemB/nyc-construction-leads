@@ -3,8 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const rowSchema = z.object({
-  license_number: z.number().int(),
+  license_number: z.string().min(1),
 }).passthrough();
+
 
 const batchSchema = z.object({
   rows: z.array(rowSchema).max(1000),
@@ -89,20 +90,19 @@ export const getLicenseByNumber = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ licenseNumber: z.union([z.string(), z.number()]) }).parse(d))
   .handler(async ({ data, context }) => {
-    const n = typeof data.licenseNumber === "number"
-      ? data.licenseNumber
-      : parseInt(String(data.licenseNumber).replace(/[^0-9-]/g, ""), 10);
-    if (!Number.isFinite(n)) return { license: null };
+    const key = String(data.licenseNumber).trim();
+    if (!key) return { license: null };
 
     const { data: rows, error } = await context.supabase
       .from("dob_license_info")
       .select("*")
-      .eq("license_number", n)
+      .eq("license_number", key)
       .order("imported_at", { ascending: false })
       .limit(1);
     if (error) throw new Error(error.message);
     return { license: rows?.[0] ?? null };
   });
+
 
 export const getLicenseStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
