@@ -178,7 +178,7 @@ function FilingDetail() {
             </Field>
           </Card>
 
-          <ApplicantLicensePanel licenseNumber={f.applicant_license_number} />
+          <ApplicantLicensePanel licenseNumber={(permitsData.permits as Array<{ applicant_license_number: string | null }>).map((p) => p.applicant_license_number).find((v) => v && String(v).trim() !== "") ?? null} />
 
           <RelatedPermits permits={permitsData.permits as never} />
 
