@@ -185,7 +185,7 @@ function ImportPage() {
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "jobs" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
               disabled={busy}
             >
-              Job Application Filing
+              Job Filings
             </button>
             <button
               onClick={() => switchMode("permits")}
@@ -194,16 +194,29 @@ function ImportPage() {
             >
               Approved Permits
             </button>
+            <button
+              onClick={() => switchMode("license")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "license" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+              disabled={busy}
+            >
+              DOB License Info
+            </button>
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
-            {mode === "jobs" ? "Upload Job Application Filing CSV" : "Upload Approved Permits (.csv or .xlsx)"}
+            {mode === "jobs" ? "Upload Job Application Filing CSV" : mode === "license" ? "Upload DOB License Info CSV" : "Upload Approved Permits (.csv or .xlsx)"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "jobs" ? (
               <>Export from{" "}
                 <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">
                   NYC Open Data — DOB Job Application Filings
+                </a>.
+              </>
+            ) : mode === "license" ? (
+              <>Enrich leads with licensee contact details — name, business, address, phone, and email. Export from{" "}
+                <a href="https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2/data_preview" target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                  NYC Open Data — DOB License Info
                 </a>.
               </>
             ) : (
