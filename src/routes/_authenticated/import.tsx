@@ -292,7 +292,7 @@ function ImportPage() {
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate">
-                    <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">{l.source === "permits_csv_upload" ? "permits" : "jobs"}</span>
+                    <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">{l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : "jobs"}</span>
                     {l.filename ?? l.source}
                   </div>
                   <div className="text-xs text-muted-foreground">
