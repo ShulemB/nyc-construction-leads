@@ -49,12 +49,13 @@ export function ApplicantLicensePanel({ licenseNumber }: { licenseNumber: string
 type LicenseRow = {
   first_name: string | null; last_name: string | null;
   business_name: string | null;
-  license_number: number | null; license_type: string | null;
+  license_number: string | null; license_type: string | null;
   license_status: string | null;
   business_house_number: string | null; business_street_name: string | null;
   license_business_city: string | null; business_state: string | null; business_zip_code: string | null;
   business_phone_number: string | null; business_email: string | null;
 };
+
 
 function LicenseDetails({ l }: { l: LicenseRow }) {
   const status = statusVariant(l.license_status);
