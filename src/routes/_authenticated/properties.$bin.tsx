@@ -6,7 +6,6 @@ import { getProperty } from "@/lib/properties.functions";
 import { addLead } from "@/lib/leads.functions";
 import { PropertyInfoCard } from "@/components/properties/PropertyInfoCard";
 import { TimelineEntry } from "@/components/properties/TimelineEntry";
-import { GoogleMapImage } from "@/components/filings/GoogleMapImage";
 import { ChevronLeft, Star } from "lucide-react";
 import { toast } from "sonner";
 
