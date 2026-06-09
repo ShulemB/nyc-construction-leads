@@ -297,7 +297,7 @@ export const getProperty = createServerFn({ method: "GET" })
       .eq("bin", data.bin)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
-    if (!property) return { property: null, filings: [], permits: [], licenseMap: {} as Record<string, AnyRow> };
+    if (!property) return { property: null, filings: [], permits: [], licenses: [] };
 
     const [filingsRes, permitsRes] = await Promise.all([
       context.supabase.from("job_application_filings").select("*").eq("bin", data.bin).order("latest_action_date", { ascending: false, nullsFirst: false }),
@@ -314,19 +314,16 @@ export const getProperty = createServerFn({ method: "GET" })
       ...permits.map((p) => p.applicant_license).filter(Boolean),
     ])) as string[];
 
-    const licenseMap: Record<string, AnyRow> = {};
+    let licenses: Array<{ [k: string]: string | number | null }> = [];
     if (licenseNums.length) {
-      const { data: licenses } = await context.supabase
+      const { data: l } = await context.supabase
         .from("dob_license_info")
         .select("*")
         .in("license_number", licenseNums);
-      for (const l of licenses ?? []) {
-        const ln = (l as { license_number: string | null }).license_number;
-        if (ln && !licenseMap[ln]) licenseMap[ln] = l as AnyRow;
-      }
+      licenses = (l ?? []) as unknown as Array<{ [k: string]: string | number | null }>;
     }
 
-    return { property, filings, permits, licenseMap };
+    return { property, filings, permits, licenses };
   });
 
 export const getImportStatus = createServerFn({ method: "GET" })
