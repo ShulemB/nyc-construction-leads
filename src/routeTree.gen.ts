@@ -16,8 +16,8 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedFilingsIndexRouteImport } from './routes/_authenticated/filings.index'
-import { Route as AuthenticatedFilingsJobNumberRouteImport } from './routes/_authenticated/filings.$jobNumber'
+import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties.index'
+import { Route as AuthenticatedPropertiesBinRouteImport } from './routes/_authenticated/properties.$bin'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -53,16 +53,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFilingsIndexRoute =
-  AuthenticatedFilingsIndexRouteImport.update({
-    id: '/filings/',
-    path: '/filings/',
+const AuthenticatedPropertiesIndexRoute =
+  AuthenticatedPropertiesIndexRouteImport.update({
+    id: '/properties/',
+    path: '/properties/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedFilingsJobNumberRoute =
-  AuthenticatedFilingsJobNumberRouteImport.update({
-    id: '/filings/$jobNumber',
-    path: '/filings/$jobNumber',
+const AuthenticatedPropertiesBinRoute =
+  AuthenticatedPropertiesBinRouteImport.update({
+    id: '/properties/$bin',
+    path: '/properties/$bin',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -73,8 +73,8 @@ export interface FileRoutesByFullPath {
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
-  '/filings/': typeof AuthenticatedFilingsIndexRoute
+  '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,8 +83,8 @@ export interface FileRoutesByTo {
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
-  '/filings': typeof AuthenticatedFilingsIndexRoute
+  '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/properties': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,8 +95,8 @@ export interface FileRoutesById {
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/filings/$jobNumber': typeof AuthenticatedFilingsJobNumberRoute
-  '/_authenticated/filings/': typeof AuthenticatedFilingsIndexRoute
+  '/_authenticated/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,8 +107,8 @@ export interface FileRouteTypes {
     | '/import'
     | '/leads'
     | '/settings'
-    | '/filings/$jobNumber'
-    | '/filings/'
+    | '/properties/$bin'
+    | '/properties/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,8 +117,8 @@ export interface FileRouteTypes {
     | '/import'
     | '/leads'
     | '/settings'
-    | '/filings/$jobNumber'
-    | '/filings'
+    | '/properties/$bin'
+    | '/properties'
   id:
     | '__root__'
     | '/'
@@ -128,8 +128,8 @@ export interface FileRouteTypes {
     | '/_authenticated/import'
     | '/_authenticated/leads'
     | '/_authenticated/settings'
-    | '/_authenticated/filings/$jobNumber'
-    | '/_authenticated/filings/'
+    | '/_authenticated/properties/$bin'
+    | '/_authenticated/properties/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -189,18 +189,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/filings/': {
-      id: '/_authenticated/filings/'
-      path: '/filings'
-      fullPath: '/filings/'
-      preLoaderRoute: typeof AuthenticatedFilingsIndexRouteImport
+    '/_authenticated/properties/': {
+      id: '/_authenticated/properties/'
+      path: '/properties'
+      fullPath: '/properties/'
+      preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/filings/$jobNumber': {
-      id: '/_authenticated/filings/$jobNumber'
-      path: '/filings/$jobNumber'
-      fullPath: '/filings/$jobNumber'
-      preLoaderRoute: typeof AuthenticatedFilingsJobNumberRouteImport
+    '/_authenticated/properties/$bin': {
+      id: '/_authenticated/properties/$bin'
+      path: '/properties/$bin'
+      fullPath: '/properties/$bin'
+      preLoaderRoute: typeof AuthenticatedPropertiesBinRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -211,8 +211,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedFilingsJobNumberRoute: typeof AuthenticatedFilingsJobNumberRoute
-  AuthenticatedFilingsIndexRoute: typeof AuthenticatedFilingsIndexRoute
+  AuthenticatedPropertiesBinRoute: typeof AuthenticatedPropertiesBinRoute
+  AuthenticatedPropertiesIndexRoute: typeof AuthenticatedPropertiesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -220,8 +220,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedFilingsJobNumberRoute: AuthenticatedFilingsJobNumberRoute,
-  AuthenticatedFilingsIndexRoute: AuthenticatedFilingsIndexRoute,
+  AuthenticatedPropertiesBinRoute: AuthenticatedPropertiesBinRoute,
+  AuthenticatedPropertiesIndexRoute: AuthenticatedPropertiesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

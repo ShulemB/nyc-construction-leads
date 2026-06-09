@@ -16,138 +16,128 @@ export type Database = {
     Tables: {
       approved_permits: {
         Row: {
+          applicant_business_address: string | null
           applicant_business_name: string | null
           applicant_first_name: string | null
           applicant_last_name: string | null
-          applicant_license_number: string | null
-          applicant_professional_title: string | null
+          applicant_license: string | null
+          applicant_middle_name: string | null
           approved_date: string | null
-          bbl: string | null
-          bin: string | null
-          block: string | null
-          borough: string | null
-          c_b_no: string | null
+          apt_condo_no: string | null
+          bin: string
           created_at: string
-          data_source: string | null
-          estimated_job_costs: number | null
+          estimated_job_costs: string | null
           expired_date: string | null
           filing_reason: string | null
-          filing_status: string | null
-          house_no: string | null
-          id: string
+          filing_rep_business_name: string | null
+          filing_rep_first_name: string | null
+          filing_rep_last_name: string | null
+          filing_rep_middle_initial: string | null
+          id: number
           issued_date: string | null
+          job_description: string | null
           job_filing_number: string | null
-          job_start_date: string | null
-          last_synced_at: string | null
-          lot: string | null
-          match_candidates: Json | null
-          match_method: string | null
-          match_status: string
-          matched_job_number: string | null
           owner_business_name: string | null
+          owner_city: string | null
           owner_name: string | null
+          owner_state: string | null
+          owner_street_address: string | null
+          owner_zip_code: string | null
           permit_status: string | null
-          permit_subtype: string | null
-          permit_type: string | null
-          raw: Json | null
+          permittee_license_type: string | null
           sequence_number: string | null
-          street_name: string | null
           tracking_number: string | null
           updated_at: string
           work_on_floor: string | null
           work_permit: string | null
-          work_retaining_wall: string | null
           work_type: string | null
+          zip_code: string | null
         }
         Insert: {
+          applicant_business_address?: string | null
           applicant_business_name?: string | null
           applicant_first_name?: string | null
           applicant_last_name?: string | null
-          applicant_license_number?: string | null
-          applicant_professional_title?: string | null
+          applicant_license?: string | null
+          applicant_middle_name?: string | null
           approved_date?: string | null
-          bbl?: string | null
-          bin?: string | null
-          block?: string | null
-          borough?: string | null
-          c_b_no?: string | null
+          apt_condo_no?: string | null
+          bin: string
           created_at?: string
-          data_source?: string | null
-          estimated_job_costs?: number | null
+          estimated_job_costs?: string | null
           expired_date?: string | null
           filing_reason?: string | null
-          filing_status?: string | null
-          house_no?: string | null
-          id?: string
+          filing_rep_business_name?: string | null
+          filing_rep_first_name?: string | null
+          filing_rep_last_name?: string | null
+          filing_rep_middle_initial?: string | null
+          id?: number
           issued_date?: string | null
+          job_description?: string | null
           job_filing_number?: string | null
-          job_start_date?: string | null
-          last_synced_at?: string | null
-          lot?: string | null
-          match_candidates?: Json | null
-          match_method?: string | null
-          match_status?: string
-          matched_job_number?: string | null
           owner_business_name?: string | null
+          owner_city?: string | null
           owner_name?: string | null
+          owner_state?: string | null
+          owner_street_address?: string | null
+          owner_zip_code?: string | null
           permit_status?: string | null
-          permit_subtype?: string | null
-          permit_type?: string | null
-          raw?: Json | null
+          permittee_license_type?: string | null
           sequence_number?: string | null
-          street_name?: string | null
           tracking_number?: string | null
           updated_at?: string
           work_on_floor?: string | null
           work_permit?: string | null
-          work_retaining_wall?: string | null
           work_type?: string | null
+          zip_code?: string | null
         }
         Update: {
+          applicant_business_address?: string | null
           applicant_business_name?: string | null
           applicant_first_name?: string | null
           applicant_last_name?: string | null
-          applicant_license_number?: string | null
-          applicant_professional_title?: string | null
+          applicant_license?: string | null
+          applicant_middle_name?: string | null
           approved_date?: string | null
-          bbl?: string | null
-          bin?: string | null
-          block?: string | null
-          borough?: string | null
-          c_b_no?: string | null
+          apt_condo_no?: string | null
+          bin?: string
           created_at?: string
-          data_source?: string | null
-          estimated_job_costs?: number | null
+          estimated_job_costs?: string | null
           expired_date?: string | null
           filing_reason?: string | null
-          filing_status?: string | null
-          house_no?: string | null
-          id?: string
+          filing_rep_business_name?: string | null
+          filing_rep_first_name?: string | null
+          filing_rep_last_name?: string | null
+          filing_rep_middle_initial?: string | null
+          id?: number
           issued_date?: string | null
+          job_description?: string | null
           job_filing_number?: string | null
-          job_start_date?: string | null
-          last_synced_at?: string | null
-          lot?: string | null
-          match_candidates?: Json | null
-          match_method?: string | null
-          match_status?: string
-          matched_job_number?: string | null
           owner_business_name?: string | null
+          owner_city?: string | null
           owner_name?: string | null
+          owner_state?: string | null
+          owner_street_address?: string | null
+          owner_zip_code?: string | null
           permit_status?: string | null
-          permit_subtype?: string | null
-          permit_type?: string | null
-          raw?: Json | null
+          permittee_license_type?: string | null
           sequence_number?: string | null
-          street_name?: string | null
           tracking_number?: string | null
           updated_at?: string
           work_on_floor?: string | null
           work_permit?: string | null
-          work_retaining_wall?: string | null
           work_type?: string | null
+          zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "approved_permits_bin_fkey"
+            columns: ["bin"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["bin"]
+          },
+        ]
       }
       dob_license_info: {
         Row: {
@@ -232,363 +222,233 @@ export type Database = {
       }
       job_application_filings: {
         Row: {
-          adult_estab: boolean | null
           applicant_first_name: string | null
           applicant_last_name: string | null
-          applicant_license_number: string | null
+          applicant_license: string | null
           applicant_professional_title: string | null
-          approved_date: string | null
-          assigned_date: string | null
-          bbl: string | null
-          bin_number: string | null
-          block: string | null
-          borough: string | null
-          building_class: string | null
-          building_type: string | null
-          census_tract: string | null
-          city_owned: boolean | null
-          cluster: string | null
-          community_board: string | null
-          council_district: string | null
-          data_source: string
+          approved: string | null
+          assigned: string | null
+          bin: string
+          boiler: string | null
+          created_at: string
+          curb_cut: string | null
           dob_run_date: string | null
           doc_number: string | null
-          efiling_filed: boolean | null
-          enlargement_sq_footage: number | null
-          existing_dwelling_units: number | null
-          existing_height: number | null
-          existing_occupancy: string | null
-          existing_stories: number | null
-          existing_zoning_sqft: number | null
+          efiling_filed: string | null
+          enlargement_sq_footage: string | null
+          equipment: string | null
+          existing_zoning_sqft: string | null
           fee_status: string | null
-          full_address: string | null
-          fully_paid_date: string | null
-          fully_permitted_date: string | null
-          horizontal_enlargement: boolean | null
-          house_number: string | null
-          id: string
-          ingested_at: string
-          initial_cost: number | null
-          is_new_this_sync: boolean
+          fire_alarm: string | null
+          fire_suppression: string | null
+          fuel_burning: string | null
+          fuel_storage: string | null
+          fully_paid: string | null
+          fully_permitted: string | null
+          horizontal_enlrgmt: string | null
+          id: number
+          initial_cost: string | null
           job_description: string | null
-          job_no_good_count: number | null
-          job_number: string
+          job_no_good_count: string | null
+          job_number: string | null
+          job_s1_no: string | null
           job_status: string | null
-          job_status_description: string | null
+          job_status_descrp: string | null
           job_type: string | null
-          job_type_label: string | null
-          landmarked: boolean | null
-          last_synced_at: string
           latest_action_date: string | null
-          latitude: number | null
-          lead_score: number
-          little_e: boolean | null
-          loft_board: boolean | null
-          longitude: number | null
-          lot: string | null
-          non_profit: boolean | null
-          nta_name: string | null
-          owner_business_name: string | null
-          owner_city: string | null
-          owner_first_name: string | null
-          owner_house_number: string | null
-          owner_last_name: string | null
-          owner_state: string | null
-          owner_street_name: string | null
-          owner_type: string | null
-          owner_type_detail: string | null
-          owner_zip: string | null
-          paid_date: string | null
-          pc_filed: boolean | null
+          lead_score: number | null
+          mechanical: string | null
+          other: string | null
+          other_description: string | null
+          paid: string | null
+          pc_filed: string | null
+          plumbing: string | null
           pre_filing_date: string | null
-          professional_cert: boolean | null
-          proposed_dwelling_units: number | null
-          proposed_height: number | null
+          professional_cert: string | null
+          proposed_dwelling_units: string | null
+          proposed_height: string | null
           proposed_occupancy: string | null
-          proposed_stories: number | null
-          proposed_zoning_sqft: number | null
+          proposed_stories: string | null
+          proposed_zoning_sqft: string | null
           signoff_date: string | null
           site_fill: string | null
           special_action_date: string | null
           special_action_status: string | null
-          special_district_1: string | null
-          special_district_2: string | null
-          street_frontage: number | null
-          street_name: string | null
-          total_construction_floor_area: number | null
-          total_est_fee: number | null
-          vertical_enlargement: boolean | null
-          withdrawal_flag: boolean | null
-          work_boiler: boolean | null
-          work_curb_cut: boolean | null
-          work_equipment: boolean | null
-          work_fire_alarm: boolean | null
-          work_fire_suppression: boolean | null
-          work_fuel_burning: boolean | null
-          work_fuel_storage: boolean | null
-          work_mechanical: boolean | null
-          work_other: boolean | null
-          work_other_description: string | null
-          work_plumbing: boolean | null
-          work_sprinkler: boolean | null
-          work_standpipe: boolean | null
-          zoning_dist1: string | null
-          zoning_dist2: string | null
-          zoning_dist3: string | null
+          sprinkler: string | null
+          standpipe: string | null
+          total_construction_floor_area: string | null
+          total_est_fee: string | null
+          updated_at: string
+          vertical_enlrgmt: string | null
+          withdrawal_flag: string | null
         }
         Insert: {
-          adult_estab?: boolean | null
           applicant_first_name?: string | null
           applicant_last_name?: string | null
-          applicant_license_number?: string | null
+          applicant_license?: string | null
           applicant_professional_title?: string | null
-          approved_date?: string | null
-          assigned_date?: string | null
-          bbl?: string | null
-          bin_number?: string | null
-          block?: string | null
-          borough?: string | null
-          building_class?: string | null
-          building_type?: string | null
-          census_tract?: string | null
-          city_owned?: boolean | null
-          cluster?: string | null
-          community_board?: string | null
-          council_district?: string | null
-          data_source?: string
+          approved?: string | null
+          assigned?: string | null
+          bin: string
+          boiler?: string | null
+          created_at?: string
+          curb_cut?: string | null
           dob_run_date?: string | null
           doc_number?: string | null
-          efiling_filed?: boolean | null
-          enlargement_sq_footage?: number | null
-          existing_dwelling_units?: number | null
-          existing_height?: number | null
-          existing_occupancy?: string | null
-          existing_stories?: number | null
-          existing_zoning_sqft?: number | null
+          efiling_filed?: string | null
+          enlargement_sq_footage?: string | null
+          equipment?: string | null
+          existing_zoning_sqft?: string | null
           fee_status?: string | null
-          full_address?: string | null
-          fully_paid_date?: string | null
-          fully_permitted_date?: string | null
-          horizontal_enlargement?: boolean | null
-          house_number?: string | null
-          id?: string
-          ingested_at?: string
-          initial_cost?: number | null
-          is_new_this_sync?: boolean
+          fire_alarm?: string | null
+          fire_suppression?: string | null
+          fuel_burning?: string | null
+          fuel_storage?: string | null
+          fully_paid?: string | null
+          fully_permitted?: string | null
+          horizontal_enlrgmt?: string | null
+          id?: number
+          initial_cost?: string | null
           job_description?: string | null
-          job_no_good_count?: number | null
-          job_number: string
+          job_no_good_count?: string | null
+          job_number?: string | null
+          job_s1_no?: string | null
           job_status?: string | null
-          job_status_description?: string | null
+          job_status_descrp?: string | null
           job_type?: string | null
-          job_type_label?: string | null
-          landmarked?: boolean | null
-          last_synced_at?: string
           latest_action_date?: string | null
-          latitude?: number | null
-          lead_score?: number
-          little_e?: boolean | null
-          loft_board?: boolean | null
-          longitude?: number | null
-          lot?: string | null
-          non_profit?: boolean | null
-          nta_name?: string | null
-          owner_business_name?: string | null
-          owner_city?: string | null
-          owner_first_name?: string | null
-          owner_house_number?: string | null
-          owner_last_name?: string | null
-          owner_state?: string | null
-          owner_street_name?: string | null
-          owner_type?: string | null
-          owner_type_detail?: string | null
-          owner_zip?: string | null
-          paid_date?: string | null
-          pc_filed?: boolean | null
+          lead_score?: number | null
+          mechanical?: string | null
+          other?: string | null
+          other_description?: string | null
+          paid?: string | null
+          pc_filed?: string | null
+          plumbing?: string | null
           pre_filing_date?: string | null
-          professional_cert?: boolean | null
-          proposed_dwelling_units?: number | null
-          proposed_height?: number | null
+          professional_cert?: string | null
+          proposed_dwelling_units?: string | null
+          proposed_height?: string | null
           proposed_occupancy?: string | null
-          proposed_stories?: number | null
-          proposed_zoning_sqft?: number | null
+          proposed_stories?: string | null
+          proposed_zoning_sqft?: string | null
           signoff_date?: string | null
           site_fill?: string | null
           special_action_date?: string | null
           special_action_status?: string | null
-          special_district_1?: string | null
-          special_district_2?: string | null
-          street_frontage?: number | null
-          street_name?: string | null
-          total_construction_floor_area?: number | null
-          total_est_fee?: number | null
-          vertical_enlargement?: boolean | null
-          withdrawal_flag?: boolean | null
-          work_boiler?: boolean | null
-          work_curb_cut?: boolean | null
-          work_equipment?: boolean | null
-          work_fire_alarm?: boolean | null
-          work_fire_suppression?: boolean | null
-          work_fuel_burning?: boolean | null
-          work_fuel_storage?: boolean | null
-          work_mechanical?: boolean | null
-          work_other?: boolean | null
-          work_other_description?: string | null
-          work_plumbing?: boolean | null
-          work_sprinkler?: boolean | null
-          work_standpipe?: boolean | null
-          zoning_dist1?: string | null
-          zoning_dist2?: string | null
-          zoning_dist3?: string | null
+          sprinkler?: string | null
+          standpipe?: string | null
+          total_construction_floor_area?: string | null
+          total_est_fee?: string | null
+          updated_at?: string
+          vertical_enlrgmt?: string | null
+          withdrawal_flag?: string | null
         }
         Update: {
-          adult_estab?: boolean | null
           applicant_first_name?: string | null
           applicant_last_name?: string | null
-          applicant_license_number?: string | null
+          applicant_license?: string | null
           applicant_professional_title?: string | null
-          approved_date?: string | null
-          assigned_date?: string | null
-          bbl?: string | null
-          bin_number?: string | null
-          block?: string | null
-          borough?: string | null
-          building_class?: string | null
-          building_type?: string | null
-          census_tract?: string | null
-          city_owned?: boolean | null
-          cluster?: string | null
-          community_board?: string | null
-          council_district?: string | null
-          data_source?: string
+          approved?: string | null
+          assigned?: string | null
+          bin?: string
+          boiler?: string | null
+          created_at?: string
+          curb_cut?: string | null
           dob_run_date?: string | null
           doc_number?: string | null
-          efiling_filed?: boolean | null
-          enlargement_sq_footage?: number | null
-          existing_dwelling_units?: number | null
-          existing_height?: number | null
-          existing_occupancy?: string | null
-          existing_stories?: number | null
-          existing_zoning_sqft?: number | null
+          efiling_filed?: string | null
+          enlargement_sq_footage?: string | null
+          equipment?: string | null
+          existing_zoning_sqft?: string | null
           fee_status?: string | null
-          full_address?: string | null
-          fully_paid_date?: string | null
-          fully_permitted_date?: string | null
-          horizontal_enlargement?: boolean | null
-          house_number?: string | null
-          id?: string
-          ingested_at?: string
-          initial_cost?: number | null
-          is_new_this_sync?: boolean
+          fire_alarm?: string | null
+          fire_suppression?: string | null
+          fuel_burning?: string | null
+          fuel_storage?: string | null
+          fully_paid?: string | null
+          fully_permitted?: string | null
+          horizontal_enlrgmt?: string | null
+          id?: number
+          initial_cost?: string | null
           job_description?: string | null
-          job_no_good_count?: number | null
-          job_number?: string
+          job_no_good_count?: string | null
+          job_number?: string | null
+          job_s1_no?: string | null
           job_status?: string | null
-          job_status_description?: string | null
+          job_status_descrp?: string | null
           job_type?: string | null
-          job_type_label?: string | null
-          landmarked?: boolean | null
-          last_synced_at?: string
           latest_action_date?: string | null
-          latitude?: number | null
-          lead_score?: number
-          little_e?: boolean | null
-          loft_board?: boolean | null
-          longitude?: number | null
-          lot?: string | null
-          non_profit?: boolean | null
-          nta_name?: string | null
-          owner_business_name?: string | null
-          owner_city?: string | null
-          owner_first_name?: string | null
-          owner_house_number?: string | null
-          owner_last_name?: string | null
-          owner_state?: string | null
-          owner_street_name?: string | null
-          owner_type?: string | null
-          owner_type_detail?: string | null
-          owner_zip?: string | null
-          paid_date?: string | null
-          pc_filed?: boolean | null
+          lead_score?: number | null
+          mechanical?: string | null
+          other?: string | null
+          other_description?: string | null
+          paid?: string | null
+          pc_filed?: string | null
+          plumbing?: string | null
           pre_filing_date?: string | null
-          professional_cert?: boolean | null
-          proposed_dwelling_units?: number | null
-          proposed_height?: number | null
+          professional_cert?: string | null
+          proposed_dwelling_units?: string | null
+          proposed_height?: string | null
           proposed_occupancy?: string | null
-          proposed_stories?: number | null
-          proposed_zoning_sqft?: number | null
+          proposed_stories?: string | null
+          proposed_zoning_sqft?: string | null
           signoff_date?: string | null
           site_fill?: string | null
           special_action_date?: string | null
           special_action_status?: string | null
-          special_district_1?: string | null
-          special_district_2?: string | null
-          street_frontage?: number | null
-          street_name?: string | null
-          total_construction_floor_area?: number | null
-          total_est_fee?: number | null
-          vertical_enlargement?: boolean | null
-          withdrawal_flag?: boolean | null
-          work_boiler?: boolean | null
-          work_curb_cut?: boolean | null
-          work_equipment?: boolean | null
-          work_fire_alarm?: boolean | null
-          work_fire_suppression?: boolean | null
-          work_fuel_burning?: boolean | null
-          work_fuel_storage?: boolean | null
-          work_mechanical?: boolean | null
-          work_other?: boolean | null
-          work_other_description?: string | null
-          work_plumbing?: boolean | null
-          work_sprinkler?: boolean | null
-          work_standpipe?: boolean | null
-          zoning_dist1?: string | null
-          zoning_dist2?: string | null
-          zoning_dist3?: string | null
+          sprinkler?: string | null
+          standpipe?: string | null
+          total_construction_floor_area?: string | null
+          total_est_fee?: string | null
+          updated_at?: string
+          vertical_enlrgmt?: string | null
+          withdrawal_flag?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_application_filings_bin_fkey"
+            columns: ["bin"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["bin"]
+          },
+        ]
       }
       leads: {
         Row: {
+          bin: string
           created_at: string
-          filing_id: string
-          follow_up_date: string | null
           id: string
           notes: string | null
-          priority: string
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          bin: string
           created_at?: string
-          filing_id: string
-          follow_up_date?: string | null
           id?: string
           notes?: string | null
-          priority?: string
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          bin?: string
           created_at?: string
-          filing_id?: string
-          follow_up_date?: string | null
           id?: string
           notes?: string | null
-          priority?: string
           status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "leads_filing_id_fkey"
-            columns: ["filing_id"]
+            foreignKeyName: "leads_bin_fkey"
+            columns: ["bin"]
             isOneToOne: false
-            referencedRelation: "job_application_filings"
-            referencedColumns: ["id"]
+            referencedRelation: "properties"
+            referencedColumns: ["bin"]
           },
         ]
       }
@@ -622,6 +482,147 @@ export type Database = {
           role?: string
           trade?: string[] | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          adult_estab: string | null
+          bbl: string | null
+          bin: string
+          block: string | null
+          borough: string | null
+          building_class: string | null
+          building_type: string | null
+          census_tract: string | null
+          city_owned: string | null
+          cluster: string | null
+          community_board: string | null
+          council_district: string | null
+          created_at: string
+          existing_dwelling_units: string | null
+          existing_height: string | null
+          existing_occupancy: string | null
+          existing_stories: string | null
+          full_address: string | null
+          house_number: string | null
+          landmarked: string | null
+          latitude: number | null
+          little_e: string | null
+          loft_board: string | null
+          longitude: number | null
+          lot: string | null
+          non_profit: string | null
+          nta: string | null
+          owner_business_name: string | null
+          owner_city: string | null
+          owner_first_name: string | null
+          owner_house_number: string | null
+          owner_last_name: string | null
+          owner_state: string | null
+          owner_street_name: string | null
+          owner_type: string | null
+          owner_zip: string | null
+          special_district1: string | null
+          special_district2: string | null
+          street_frontage: string | null
+          street_name: string | null
+          updated_at: string
+          zoning_dist1: string | null
+          zoning_dist2: string | null
+          zoning_dist3: string | null
+        }
+        Insert: {
+          adult_estab?: string | null
+          bbl?: string | null
+          bin: string
+          block?: string | null
+          borough?: string | null
+          building_class?: string | null
+          building_type?: string | null
+          census_tract?: string | null
+          city_owned?: string | null
+          cluster?: string | null
+          community_board?: string | null
+          council_district?: string | null
+          created_at?: string
+          existing_dwelling_units?: string | null
+          existing_height?: string | null
+          existing_occupancy?: string | null
+          existing_stories?: string | null
+          full_address?: string | null
+          house_number?: string | null
+          landmarked?: string | null
+          latitude?: number | null
+          little_e?: string | null
+          loft_board?: string | null
+          longitude?: number | null
+          lot?: string | null
+          non_profit?: string | null
+          nta?: string | null
+          owner_business_name?: string | null
+          owner_city?: string | null
+          owner_first_name?: string | null
+          owner_house_number?: string | null
+          owner_last_name?: string | null
+          owner_state?: string | null
+          owner_street_name?: string | null
+          owner_type?: string | null
+          owner_zip?: string | null
+          special_district1?: string | null
+          special_district2?: string | null
+          street_frontage?: string | null
+          street_name?: string | null
+          updated_at?: string
+          zoning_dist1?: string | null
+          zoning_dist2?: string | null
+          zoning_dist3?: string | null
+        }
+        Update: {
+          adult_estab?: string | null
+          bbl?: string | null
+          bin?: string
+          block?: string | null
+          borough?: string | null
+          building_class?: string | null
+          building_type?: string | null
+          census_tract?: string | null
+          city_owned?: string | null
+          cluster?: string | null
+          community_board?: string | null
+          council_district?: string | null
+          created_at?: string
+          existing_dwelling_units?: string | null
+          existing_height?: string | null
+          existing_occupancy?: string | null
+          existing_stories?: string | null
+          full_address?: string | null
+          house_number?: string | null
+          landmarked?: string | null
+          latitude?: number | null
+          little_e?: string | null
+          loft_board?: string | null
+          longitude?: number | null
+          lot?: string | null
+          non_profit?: string | null
+          nta?: string | null
+          owner_business_name?: string | null
+          owner_city?: string | null
+          owner_first_name?: string | null
+          owner_house_number?: string | null
+          owner_last_name?: string | null
+          owner_state?: string | null
+          owner_street_name?: string | null
+          owner_type?: string | null
+          owner_zip?: string | null
+          special_district1?: string | null
+          special_district2?: string | null
+          street_frontage?: string | null
+          street_name?: string | null
+          updated_at?: string
+          zoning_dist1?: string | null
+          zoning_dist2?: string | null
+          zoning_dist3?: string | null
         }
         Relationships: []
       }

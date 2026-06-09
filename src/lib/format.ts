@@ -1,11 +1,13 @@
-export const fmtCurrency = (n: number | null | undefined, compact = false): string => {
-  if (n === null || n === undefined) return "—";
+export const fmtCurrency = (n: number | string | null | undefined, compact = false): string => {
+  if (n === null || n === undefined || n === "") return "—";
+  const v = typeof n === "string" ? Number(n.replace(/[$,]/g, "")) : n;
+  if (!Number.isFinite(v)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     notation: compact ? "compact" : "standard",
     maximumFractionDigits: compact ? 1 : 0,
-  }).format(n);
+  }).format(v);
 };
 
 export const fmtNumber = (n: number | null | undefined): string => {
