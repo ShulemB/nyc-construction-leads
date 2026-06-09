@@ -149,6 +149,87 @@ export type Database = {
         }
         Relationships: []
       }
+      dob_license_info: {
+        Row: {
+          bbl: string | null
+          bin: number | null
+          business_email: string | null
+          business_house_number: string | null
+          business_name: string | null
+          business_phone_number: string | null
+          business_state: string | null
+          business_street_name: string | null
+          business_zip_code: string | null
+          census_tract: number | null
+          community_board: number | null
+          council_district: number | null
+          first_name: string | null
+          id: number
+          imported_at: string
+          last_name: string | null
+          lat: number | null
+          license_business_city: string | null
+          license_number: number | null
+          license_sl_no: number | null
+          license_status: string | null
+          license_type: string | null
+          long: number | null
+          nta: string | null
+        }
+        Insert: {
+          bbl?: string | null
+          bin?: number | null
+          business_email?: string | null
+          business_house_number?: string | null
+          business_name?: string | null
+          business_phone_number?: string | null
+          business_state?: string | null
+          business_street_name?: string | null
+          business_zip_code?: string | null
+          census_tract?: number | null
+          community_board?: number | null
+          council_district?: number | null
+          first_name?: string | null
+          id?: number
+          imported_at?: string
+          last_name?: string | null
+          lat?: number | null
+          license_business_city?: string | null
+          license_number?: number | null
+          license_sl_no?: number | null
+          license_status?: string | null
+          license_type?: string | null
+          long?: number | null
+          nta?: string | null
+        }
+        Update: {
+          bbl?: string | null
+          bin?: number | null
+          business_email?: string | null
+          business_house_number?: string | null
+          business_name?: string | null
+          business_phone_number?: string | null
+          business_state?: string | null
+          business_street_name?: string | null
+          business_zip_code?: string | null
+          census_tract?: number | null
+          community_board?: number | null
+          council_district?: number | null
+          first_name?: string | null
+          id?: number
+          imported_at?: string
+          last_name?: string | null
+          lat?: number | null
+          license_business_city?: string | null
+          license_number?: number | null
+          license_sl_no?: number | null
+          license_status?: string | null
+          license_type?: string | null
+          long?: number | null
+          nta?: string | null
+        }
+        Relationships: []
+      }
       job_application_filings: {
         Row: {
           adult_estab: boolean | null
