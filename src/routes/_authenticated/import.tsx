@@ -7,8 +7,10 @@ import * as XLSX from "xlsx";
 import { AppShell } from "@/components/layout/AppShell";
 import { ingestBatch, listSyncLogs } from "@/lib/import.functions";
 import { ingestPermitBatch } from "@/lib/permits.functions";
+import { ingestLicenseBatch } from "@/lib/license.functions";
 import { normalizeFiling } from "@/lib/ingest/normalize";
 import { normalizePermit } from "@/lib/ingest/normalizePermit";
+import { normalizeLicense } from "@/lib/ingest/normalizeLicense";
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
-type Mode = "jobs" | "permits";
+type Mode = "jobs" | "permits" | "license";
 
 interface Stats {
   processed: number;
@@ -49,6 +51,7 @@ function ImportPage() {
 
   const ingestJobsFn = useServerFn(ingestBatch);
   const ingestPermitsFn = useServerFn(ingestPermitBatch);
+  const ingestLicenseFn = useServerFn(ingestLicenseBatch);
   const logsFn = useServerFn(listSyncLogs);
   const qc = useQueryClient();
   const { data: logsData } = useSuspenseQuery({ queryKey: ["sync-logs"], queryFn: () => logsFn() });
@@ -89,6 +92,11 @@ function ImportPage() {
           data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
         });
       }
+      if (mode === "license") {
+        return ingestLicenseFn({
+          data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
+        });
+      }
       return ingestPermitsFn({
         data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
       });
@@ -116,7 +124,7 @@ function ImportPage() {
       }
     };
 
-    const normalize = mode === "jobs" ? normalizeFiling : normalizePermit;
+    const normalize = mode === "jobs" ? normalizeFiling : mode === "license" ? normalizeLicense : normalizePermit;
 
     if (isXlsx) {
       // XLSX: read whole file, parse first sheet, batch in chunks
@@ -177,7 +185,7 @@ function ImportPage() {
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "jobs" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
               disabled={busy}
             >
-              Job Application Filing
+              Job Filings
             </button>
             <button
               onClick={() => switchMode("permits")}
@@ -186,16 +194,29 @@ function ImportPage() {
             >
               Approved Permits
             </button>
+            <button
+              onClick={() => switchMode("license")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${mode === "license" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+              disabled={busy}
+            >
+              DOB License Info
+            </button>
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
-            {mode === "jobs" ? "Upload Job Application Filing CSV" : "Upload Approved Permits (.csv or .xlsx)"}
+            {mode === "jobs" ? "Upload Job Application Filing CSV" : mode === "license" ? "Upload DOB License Info CSV" : "Upload Approved Permits (.csv or .xlsx)"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "jobs" ? (
               <>Export from{" "}
                 <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">
                   NYC Open Data — DOB Job Application Filings
+                </a>.
+              </>
+            ) : mode === "license" ? (
+              <>Enrich leads with licensee contact details — name, business, address, phone, and email. Export from{" "}
+                <a href="https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2/data_preview" target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                  NYC Open Data — DOB License Info
                 </a>.
               </>
             ) : (
@@ -271,7 +292,7 @@ function ImportPage() {
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate">
-                    <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">{l.source === "permits_csv_upload" ? "permits" : "jobs"}</span>
+                    <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">{l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : "jobs"}</span>
                     {l.filename ?? l.source}
                   </div>
                   <div className="text-xs text-muted-foreground">
