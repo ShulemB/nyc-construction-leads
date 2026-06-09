@@ -34,6 +34,14 @@ export function PropertyInfoCard({ property: p }: { property: Record<string, V> 
 
   return (
     <aside className="sticky top-6 self-start rounded-xl border border-border bg-card">
+      <div className="px-5 pt-4">
+        <GoogleMapImage
+          houseNumber={p.house_number ?? null}
+          streetName={p.street_name == null ? null : String(p.street_name)}
+          borough={p.borough == null ? null : String(p.borough)}
+          address={[p.house_number, p.street_name, p.borough].filter(Boolean).join(" ")}
+        />
+      </div>
       <Section title="Address">
         <F label="Street">{fullStreet}</F>
         <div className="grid grid-cols-3 gap-3">
