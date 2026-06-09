@@ -2,32 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// ─── Ingest: filings ─────────────────────────────────────────────────────────
-
-const filingRowSchema = z.object({ bin: z.string().min(1) }).passthrough();
-const permitRowSchema = z.object({ bin: z.string().min(1) }).passthrough();
-
-const batchSchema = z.object({
-  rows: z.array(z.record(z.string(), z.unknown())).max(1000),
-  syncLogId: z.string().uuid().nullable(),
-  filename: z.string().max(255).optional(),
-  isFirstBatch: z.boolean().default(false),
-  isLastBatch: z.boolean().default(false),
-});
-
 type AnyRow = Record<string, unknown>;
-
-function splitPropertyAndChild<K extends "filing" | "permit">(
-  rows: AnyRow[],
-  kind: K,
-): { properties: AnyRow[]; children: AnyRow[] } {
-  // Each row has been pre-normalized by client. We separate: property data is everything in propertyFields,
-  // child data is the rest (with bin retained as FK).
-  // To keep this generic, the client sends rows already split — but here we just pass them through.
-  void kind;
-  return { properties: [], children: rows };
-}
-void splitPropertyAndChild;
 
 async function ensureSyncLog(opts: {
   isFirst: boolean;
@@ -74,7 +49,6 @@ async function bumpSyncLog(
   }).eq("id", syncLogId);
 }
 
-// Input shape: each row is { property: {...}, filing: {...} } or { property: {...}, permit: {...} }
 const filingPayloadRow = z.object({
   property: z.record(z.string(), z.unknown()),
   filing: z.record(z.string(), z.unknown()),
@@ -105,7 +79,7 @@ export const ingestFilingBatch = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => filingBatchSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let syncLogId = await ensureSyncLog({
+    const syncLogId = await ensureSyncLog({
       isFirst: data.isFirstBatch,
       syncLogId: data.syncLogId,
       userId: context.userId,
@@ -113,42 +87,43 @@ export const ingestFilingBatch = createServerFn({ method: "POST" })
       source: "filings_csv_upload",
     });
 
-    // Dedupe by bin in this batch — most recent filing wins for property write
     const propsByBin = new Map<string, AnyRow>();
     for (const r of data.rows) {
       const p = r.property as AnyRow;
-      const bin = p.bin as string;
+      const bin = p.bin as string | undefined;
       if (bin) propsByBin.set(bin, p);
     }
     const properties = Array.from(propsByBin.values());
 
-    // Upsert properties (full overwrite — most recent filing wins)
     if (properties.length) {
       const { error } = await supabaseAdmin.from("properties").upsert(properties as never, { onConflict: "bin" });
       if (error) console.error("[ingest filing: properties]", error);
     }
 
-    // Dedupe filings by job_number
     const seen = new Set<string>();
-    const filings: AnyRow[] = [];
+    const filings: Array<AnyRow & { bin: string; job_number: string }> = [];
     let skipped = 0;
     for (const r of data.rows) {
-      const f = { ...(r.filing as AnyRow), bin: (r.property as AnyRow).bin };
-      const jn = f.job_number as string | null;
-      if (!jn) { skipped++; continue; }
+      const f = r.filing as AnyRow;
+      const bin = (r.property as AnyRow).bin as string | undefined;
+      const jn = f.job_number as string | null | undefined;
+      if (!bin || !jn) { skipped++; continue; }
       if (seen.has(jn)) continue;
       seen.add(jn);
-      filings.push(f);
+      filings.push({ ...f, bin, job_number: jn });
     }
 
-    // Detect existing for added/updated counting
-    const jns = filings.map((f) => f.job_number as string);
-    const { data: existing } = jns.length
-      ? await supabaseAdmin.from("job_application_filings").select("job_number").in("job_number", jns)
-      : { data: [] };
-    const existingSet = new Set((existing ?? []).map((e) => e.job_number as string));
+    const jns = filings.map((f) => f.job_number);
+    let existingSet = new Set<string>();
+    if (jns.length) {
+      const { data: existing } = await supabaseAdmin
+        .from("job_application_filings")
+        .select("job_number")
+        .in("job_number", jns);
+      existingSet = new Set((existing ?? []).map((e) => e.job_number as string).filter(Boolean));
+    }
     let added = 0, updated = 0;
-    for (const f of filings) (existingSet.has(f.job_number as string) ? updated++ : added++);
+    for (const f of filings) (existingSet.has(f.job_number) ? updated++ : added++);
 
     let errored = 0;
     if (filings.length) {
@@ -167,7 +142,7 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => permitBatchSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let syncLogId = await ensureSyncLog({
+    const syncLogId = await ensureSyncLog({
       isFirst: data.isFirstBatch,
       syncLogId: data.syncLogId,
       userId: context.userId,
@@ -175,17 +150,14 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
       source: "permits_csv_upload",
     });
 
-    // Dedupe properties by bin
     const propsByBin = new Map<string, AnyRow>();
     for (const r of data.rows) {
       const p = r.property as AnyRow;
-      const bin = p.bin as string;
+      const bin = p.bin as string | undefined;
       if (bin && !propsByBin.has(bin)) propsByBin.set(bin, p);
     }
     const bins = Array.from(propsByBin.keys());
 
-    // Property upsert from permit must NOT overwrite building characteristics.
-    // Strategy: find existing bins; insert new ones; for existing ones, update only address/geo via separate UPDATE.
     if (bins.length) {
       const { data: existing } = await supabaseAdmin.from("properties").select("bin").in("bin", bins);
       const existingBins = new Set((existing ?? []).map((e) => e.bin as string));
@@ -196,34 +168,35 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
         const { error } = await supabaseAdmin.from("properties").insert(toInsert as never);
         if (error) console.error("[permit: property insert]", error);
       }
-      // Update each existing property's address/geo only (other cols untouched).
       for (const p of toUpdate) {
-        const { bin, ...rest } = p as { bin: string; [k: string]: unknown };
+        const { bin, ...rest } = p as { bin: string } & AnyRow;
         const { error } = await supabaseAdmin.from("properties").update(rest as never).eq("bin", bin);
         if (error) console.error("[permit: property update]", error);
       }
     }
 
-    // Permits — dedup by work_permit (skip rows without one — they can't be uniquely upserted)
     const seen = new Set<string>();
-    const permits: AnyRow[] = [];
+    const permits: Array<AnyRow & { bin: string; work_permit: string }> = [];
     let skipped = 0;
     for (const r of data.rows) {
-      const p = { ...(r.permit as AnyRow), bin: (r.property as AnyRow).bin };
-      const wp = p.work_permit as string | null;
-      if (!wp) { skipped++; continue; }
+      const p = r.permit as AnyRow;
+      const bin = (r.property as AnyRow).bin as string | undefined;
+      const wp = p.work_permit as string | null | undefined;
+      if (!bin || !wp) { skipped++; continue; }
       if (seen.has(wp)) continue;
       seen.add(wp);
-      permits.push(p);
+      permits.push({ ...p, bin, work_permit: wp });
     }
 
-    const wps = permits.map((p) => p.work_permit as string);
-    const { data: existingPermits } = wps.length
-      ? await supabaseAdmin.from("approved_permits").select("work_permit").in("work_permit", wps)
-      : { data: [] };
-    const existingSet = new Set((existingPermits ?? []).map((e) => e.work_permit as string));
+    const wps = permits.map((p) => p.work_permit);
+    let existingSet = new Set<string>();
+    if (wps.length) {
+      const { data: existingPermits } = await supabaseAdmin
+        .from("approved_permits").select("work_permit").in("work_permit", wps);
+      existingSet = new Set((existingPermits ?? []).map((e) => e.work_permit as string).filter(Boolean));
+    }
     let added = 0, updated = 0;
-    for (const p of permits) (existingSet.has(p.work_permit as string) ? updated++ : added++);
+    for (const p of permits) (existingSet.has(p.work_permit) ? updated++ : added++);
 
     let errored = 0;
     if (permits.length) {
@@ -273,14 +246,23 @@ export const listProperties = createServerFn({ method: "GET" })
     const { data: rows, count, error } = await q;
     if (error) throw new Error(error.message);
 
-    const properties = (rows ?? []).map((p) => {
-      const filings = (p.filings ?? []) as Array<{ job_number: string | null; job_type: string | null; job_status: string | null; latest_action_date: string | null; initial_cost: string | null; lead_score: number | null }>;
-      const permits = (p.permits ?? []) as Array<{ work_permit: string | null; work_type: string | null; permit_status: string | null; issued_date: string | null; estimated_job_costs: string | null }>;
+    type Row = {
+      bin: string; borough: string | null; house_number: string | null; street_name: string | null;
+      owner_business_name: string | null; owner_first_name: string | null; owner_last_name: string | null;
+      updated_at: string; full_address: string | null;
+      filings: Array<{ job_number: string | null; job_type: string | null; job_status: string | null; latest_action_date: string | null; initial_cost: string | null; lead_score: number | null }> | null;
+      permits: Array<{ work_permit: string | null; work_type: string | null; permit_status: string | null; issued_date: string | null; estimated_job_costs: string | null }> | null;
+    };
+    const typed = (rows ?? []) as unknown as Row[];
+
+    const properties = typed.map((p) => {
+      const filings = p.filings ?? [];
+      const permits = p.permits ?? [];
       const latestFiling = [...filings].sort((a, b) => (b.latest_action_date ?? "").localeCompare(a.latest_action_date ?? ""))[0] ?? null;
       const latestPermit = [...permits].sort((a, b) => (b.issued_date ?? "").localeCompare(a.issued_date ?? ""))[0] ?? null;
       const maxScore = filings.reduce((m, f) => Math.max(m, f.lead_score ?? 0), 0);
       return {
-        bin: p.bin as string,
+        bin: p.bin,
         borough: p.borough,
         house_number: p.house_number,
         street_name: p.street_name,
@@ -315,7 +297,7 @@ export const getProperty = createServerFn({ method: "GET" })
       .eq("bin", data.bin)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
-    if (!property) return { property: null, timeline: [] };
+    if (!property) return { property: null, filings: [], permits: [], licenseMap: {} as Record<string, AnyRow> };
 
     const [filingsRes, permitsRes] = await Promise.all([
       context.supabase.from("job_application_filings").select("*").eq("bin", data.bin).order("latest_action_date", { ascending: false, nullsFirst: false }),
@@ -332,7 +314,7 @@ export const getProperty = createServerFn({ method: "GET" })
       ...permits.map((p) => p.applicant_license).filter(Boolean),
     ])) as string[];
 
-    let licenseMap: Record<string, unknown> = {};
+    const licenseMap: Record<string, AnyRow> = {};
     if (licenseNums.length) {
       const { data: licenses } = await context.supabase
         .from("dob_license_info")
@@ -340,34 +322,11 @@ export const getProperty = createServerFn({ method: "GET" })
         .in("license_number", licenseNums);
       for (const l of licenses ?? []) {
         const ln = (l as { license_number: string | null }).license_number;
-        if (ln && !licenseMap[ln]) licenseMap[ln] = l;
+        if (ln && !licenseMap[ln]) licenseMap[ln] = l as AnyRow;
       }
     }
 
-    type TLEntry =
-      | { type: "filing"; sortDate: string | null; record: typeof filings[number]; license: unknown }
-      | { type: "permit"; sortDate: string | null; record: typeof permits[number]; license: unknown };
-
-    const timeline: TLEntry[] = [
-      ...filings.map((f) => ({
-        type: "filing" as const,
-        sortDate: (f.latest_action_date ?? f.approved ?? f.pre_filing_date) as string | null,
-        record: f,
-        license: f.applicant_license ? licenseMap[f.applicant_license] ?? null : null,
-      })),
-      ...permits.map((p) => ({
-        type: "permit" as const,
-        sortDate: (p.issued_date ?? p.approved_date) as string | null,
-        record: p,
-        license: p.applicant_license ? licenseMap[p.applicant_license] ?? null : null,
-      })),
-    ].sort((a, b) => {
-      if (!a.sortDate) return 1;
-      if (!b.sortDate) return -1;
-      return b.sortDate.localeCompare(a.sortDate);
-    });
-
-    return { property, timeline };
+    return { property, filings, permits, licenseMap };
   });
 
 export const getImportStatus = createServerFn({ method: "GET" })
