@@ -68,7 +68,8 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
 
     // Resolve matches for all rows in 3 bulk queries (job_number, bin, bbl)
     const candidates = [...byWorkSeq.values(), ...byTracking.values()];
-    const jobNums = [...new Set(candidates.map((r) => r.job_filing_number).filter(Boolean) as string[])];
+    const baseJob = (s: string | null | undefined) => (s ? s.split("-")[0].trim() : null);
+    const jobNums = [...new Set(candidates.map((r) => baseJob(r.job_filing_number)).filter(Boolean) as string[])];
     const bins = [...new Set(candidates.map((r) => r.bin).filter(Boolean) as string[])];
     const bbls = [...new Set(candidates.map((r) => r.bbl).filter(Boolean) as string[])];
 
@@ -100,10 +101,11 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
 
     const enriched: PermitRow[] = [];
     for (const r of candidates) {
+      const base = baseJob(r.job_filing_number);
       let match: { matched_job_number: string | null; match_status: string; match_method: string | null; match_candidates: unknown } =
         { matched_job_number: null, match_status: "unmatched", match_method: null, match_candidates: null };
-      if (r.job_filing_number && jobSet.has(r.job_filing_number)) {
-        match = { matched_job_number: r.job_filing_number, match_status: "matched", match_method: "job_filing_number", match_candidates: null };
+      if (base && jobSet.has(base)) {
+        match = { matched_job_number: base, match_status: "matched", match_method: "job_filing_number", match_candidates: null };
       } else if (r.bin && binMap.has(r.bin)) {
         const set = binMap.get(r.bin)!;
         if (set.size === 1) match = { matched_job_number: [...set][0], match_status: "matched", match_method: "bin", match_candidates: null };
@@ -118,6 +120,7 @@ export const ingestPermitBatch = createServerFn({ method: "POST" })
       else if (match.match_status === "ambiguous") ambiguous++;
       else unmatched++;
     }
+
 
     // Detect existing for added/updated counts
     const workSeqRows = enriched.filter((r) => r.work_permit && r.sequence_number);
@@ -216,7 +219,7 @@ export const listPermitsByJob = createServerFn({ method: "POST" })
     const { data: rows, error } = await context.supabase
       .from("approved_permits")
       .select("*")
-      .eq("matched_job_number", data.jobNumber)
+      .or(`matched_job_number.eq.${data.jobNumber},job_filing_number.eq.${data.jobNumber},job_filing_number.like.${data.jobNumber}-%`)
       .order("issued_date", { ascending: false, nullsFirst: false });
     if (error) throw new Error(error.message);
     return { permits: rows ?? [] };
