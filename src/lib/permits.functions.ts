@@ -219,7 +219,7 @@ export const listPermitsByJob = createServerFn({ method: "POST" })
     const { data: rows, error } = await context.supabase
       .from("approved_permits")
       .select("*")
-      .eq("matched_job_number", data.jobNumber)
+      .or(`matched_job_number.eq.${data.jobNumber},job_filing_number.eq.${data.jobNumber},job_filing_number.like.${data.jobNumber}-%`)
       .order("issued_date", { ascending: false, nullsFirst: false });
     if (error) throw new Error(error.message);
     return { permits: rows ?? [] };
