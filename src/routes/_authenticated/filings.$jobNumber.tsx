@@ -7,6 +7,7 @@ import { listPermitsByJob } from "@/lib/permits.functions";
 import { addLead } from "@/lib/leads.functions";
 import { RelatedPermits } from "@/components/filings/RelatedPermits";
 import { GoogleMapImage } from "@/components/filings/GoogleMapImage";
+import { ApplicantLicensePanel } from "@/components/filings/ApplicantLicensePanel";
 import { fmtCurrency, fmtNumber, fmtDate, daysAgo } from "@/lib/format";
 import { WORK_TYPES, jobTypeColor, scoreTier } from "@/lib/dob-constants";
 import { ChevronLeft, Plus, ExternalLink, MapPin } from "lucide-react";
@@ -176,6 +177,8 @@ function FilingDetail() {
               ) : "—"}
             </Field>
           </Card>
+
+          <ApplicantLicensePanel licenseNumber={f.applicant_license_number} />
 
           <RelatedPermits permits={permitsData.permits as never} />
 
