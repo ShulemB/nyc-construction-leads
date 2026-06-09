@@ -100,9 +100,9 @@ function PropertyDetail() {
 
         <section className="space-y-6">
           <GoogleMapImage
-            houseNumber={property.house_number}
-            streetName={property.street_name}
-            borough={property.borough}
+            houseNumber={property.house_number ?? null}
+            streetName={property.street_name == null ? null : String(property.street_name)}
+            borough={property.borough == null ? null : String(property.borough)}
             address={[property.house_number, property.street_name, property.borough].filter(Boolean).join(" ")}
           />
           <div className="flex items-center justify-between">
