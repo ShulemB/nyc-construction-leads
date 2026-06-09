@@ -169,7 +169,7 @@ export type Database = {
           last_name: string | null
           lat: number | null
           license_business_city: string | null
-          license_number: number | null
+          license_number: string | null
           license_sl_no: number | null
           license_status: string | null
           license_type: string | null
@@ -195,7 +195,7 @@ export type Database = {
           last_name?: string | null
           lat?: number | null
           license_business_city?: string | null
-          license_number?: number | null
+          license_number?: string | null
           license_sl_no?: number | null
           license_status?: string | null
           license_type?: string | null
@@ -221,7 +221,7 @@ export type Database = {
           last_name?: string | null
           lat?: number | null
           license_business_city?: string | null
-          license_number?: number | null
+          license_number?: string | null
           license_sl_no?: number | null
           license_status?: string | null
           license_type?: string | null
