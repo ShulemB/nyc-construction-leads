@@ -17,6 +17,7 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties.index'
+import { Route as ApiPublicGmapRouteImport } from './routes/api/public/gmap'
 import { Route as AuthenticatedPropertiesBinRouteImport } from './routes/_authenticated/properties.$bin'
 
 const AuthRoute = AuthRouteImport.update({
@@ -59,6 +60,11 @@ const AuthenticatedPropertiesIndexRoute =
     path: '/properties/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicGmapRoute = ApiPublicGmapRouteImport.update({
+  id: '/api/public/gmap',
+  path: '/api/public/gmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPropertiesBinRoute =
   AuthenticatedPropertiesBinRouteImport.update({
     id: '/properties/$bin',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/api/public/gmap': typeof ApiPublicGmapRoute
   '/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/api/public/gmap': typeof ApiPublicGmapRoute
   '/properties': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesById {
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/api/public/gmap': typeof ApiPublicGmapRoute
   '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRouteTypes {
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/properties/$bin'
+    | '/api/public/gmap'
     | '/properties/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/properties/$bin'
+    | '/api/public/gmap'
     | '/properties'
   id:
     | '__root__'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/settings'
     | '/_authenticated/properties/$bin'
+    | '/api/public/gmap'
     | '/_authenticated/properties/'
   fileRoutesById: FileRoutesById
 }
@@ -136,6 +148,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicGmapRoute: typeof ApiPublicGmapRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/gmap': {
+      id: '/api/public/gmap'
+      path: '/api/public/gmap'
+      fullPath: '/api/public/gmap'
+      preLoaderRoute: typeof ApiPublicGmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/properties/$bin': {
       id: '/_authenticated/properties/$bin'
       path: '/properties/$bin'
@@ -231,6 +251,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicGmapRoute: ApiPublicGmapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
