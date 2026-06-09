@@ -98,12 +98,6 @@ function PropertyDetail() {
         <PropertyInfoCard property={property} />
 
         <section className="space-y-6">
-          <GoogleMapImage
-            houseNumber={property.house_number ?? null}
-            streetName={property.street_name == null ? null : String(property.street_name)}
-            borough={property.borough == null ? null : String(property.borough)}
-            address={[property.house_number, property.street_name, property.borough].filter(Boolean).join(" ")}
-          />
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Activity timeline</h2>
             <p className="text-xs text-muted-foreground">{filings.length} filings · {permits.length} permits · sorted by latest activity</p>
