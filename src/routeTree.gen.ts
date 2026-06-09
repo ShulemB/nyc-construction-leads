@@ -16,6 +16,8 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties.index'
+import { Route as AuthenticatedPropertiesBinRouteImport } from './routes/_authenticated/properties.$bin'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -51,6 +53,18 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPropertiesIndexRoute =
+  AuthenticatedPropertiesIndexRouteImport.update({
+    id: '/properties/',
+    path: '/properties/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPropertiesBinRoute =
+  AuthenticatedPropertiesBinRouteImport.update({
+    id: '/properties/$bin',
+    path: '/properties/$bin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +83,8 @@ export interface FileRoutesByTo {
   '/import': typeof AuthenticatedImportRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/properties': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,12 +95,30 @@ export interface FileRoutesById {
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/properties/$bin': typeof AuthenticatedPropertiesBinRoute
+  '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/import' | '/leads' | '/settings'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/import'
+    | '/leads'
+    | '/settings'
+    | '/properties/$bin'
+    | '/properties/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/import' | '/leads' | '/settings'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/import'
+    | '/leads'
+    | '/settings'
+    | '/properties/$bin'
+    | '/properties'
   id:
     | '__root__'
     | '/'
@@ -92,6 +128,8 @@ export interface FileRouteTypes {
     | '/_authenticated/import'
     | '/_authenticated/leads'
     | '/_authenticated/settings'
+    | '/_authenticated/properties/$bin'
+    | '/_authenticated/properties/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,6 +189,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/properties/': {
+      id: '/_authenticated/properties/'
+      path: '/properties'
+      fullPath: '/properties/'
+      preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/properties/$bin': {
+      id: '/_authenticated/properties/$bin'
+      path: '/properties/$bin'
+      fullPath: '/properties/$bin'
+      preLoaderRoute: typeof AuthenticatedPropertiesBinRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -159,6 +211,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedPropertiesBinRoute: typeof AuthenticatedPropertiesBinRoute
+  AuthenticatedPropertiesIndexRoute: typeof AuthenticatedPropertiesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -166,6 +220,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedPropertiesBinRoute: AuthenticatedPropertiesBinRoute,
+  AuthenticatedPropertiesIndexRoute: AuthenticatedPropertiesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -179,3 +235,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
