@@ -28,13 +28,15 @@ const toFloat = (v: string | null): number | null => {
 
 export interface NormalizedLicense {
   license_sl_no: number | null;
-  license_number: number | null;
+  license_number: string | null;
   [k: string]: unknown;
 }
 
 export function normalizeLicense(row: Row): NormalizedLicense | null {
-  const licenseNumber = toInt(get(row, "license_number"));
-  if (licenseNumber === null) return null;
+  const licenseNumberRaw = get(row, "license_number");
+  const licenseNumber = licenseNumberRaw ? licenseNumberRaw.trim() : null;
+  if (!licenseNumber) return null;
+
 
   return {
     license_sl_no: toInt(get(row, "license_sl_no")),
