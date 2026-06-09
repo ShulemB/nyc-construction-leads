@@ -7,8 +7,10 @@ import * as XLSX from "xlsx";
 import { AppShell } from "@/components/layout/AppShell";
 import { ingestBatch, listSyncLogs } from "@/lib/import.functions";
 import { ingestPermitBatch } from "@/lib/permits.functions";
+import { ingestLicenseBatch } from "@/lib/license.functions";
 import { normalizeFiling } from "@/lib/ingest/normalize";
 import { normalizePermit } from "@/lib/ingest/normalizePermit";
+import { normalizeLicense } from "@/lib/ingest/normalizeLicense";
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
-type Mode = "jobs" | "permits";
+type Mode = "jobs" | "permits" | "license";
 
 interface Stats {
   processed: number;
@@ -49,6 +51,7 @@ function ImportPage() {
 
   const ingestJobsFn = useServerFn(ingestBatch);
   const ingestPermitsFn = useServerFn(ingestPermitBatch);
+  const ingestLicenseFn = useServerFn(ingestLicenseBatch);
   const logsFn = useServerFn(listSyncLogs);
   const qc = useQueryClient();
   const { data: logsData } = useSuspenseQuery({ queryKey: ["sync-logs"], queryFn: () => logsFn() });
@@ -89,6 +92,11 @@ function ImportPage() {
           data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
         });
       }
+      if (mode === "license") {
+        return ingestLicenseFn({
+          data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
+        });
+      }
       return ingestPermitsFn({
         data: { rows: rows as never, syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last },
       });
@@ -116,7 +124,7 @@ function ImportPage() {
       }
     };
 
-    const normalize = mode === "jobs" ? normalizeFiling : normalizePermit;
+    const normalize = mode === "jobs" ? normalizeFiling : mode === "license" ? normalizeLicense : normalizePermit;
 
     if (isXlsx) {
       // XLSX: read whole file, parse first sheet, batch in chunks
