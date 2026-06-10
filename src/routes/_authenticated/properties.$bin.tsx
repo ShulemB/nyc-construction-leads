@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { getProperty } from "@/lib/properties.functions";
 import { addLead } from "@/lib/leads.functions";
+import { listSwosByBin } from "@/lib/swo.functions";
 import { PropertyInfoCard } from "@/components/properties/PropertyInfoCard";
 import { TimelineEntry } from "@/components/properties/TimelineEntry";
-import { ChevronLeft, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, Star, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/properties/$bin")({
@@ -30,6 +32,12 @@ function PropertyDetail() {
     onSuccess: () => { toast.success("Added to leads"); qc.invalidateQueries({ queryKey: ["leads"] }); },
     onError: (e) => toast.error(e.message),
   });
+  const swosFn = useServerFn(listSwosByBin);
+  const { data: swoData } = useQuery({
+    queryKey: ["swos", bin],
+    queryFn: () => swosFn({ data: { bin } }),
+  });
+  const swos = (swoData?.swos ?? []) as Array<Record<string, string | number | null>>;
 
   if (!data.property) {
     return (
@@ -98,6 +106,53 @@ function PropertyDetail() {
         <PropertyInfoCard property={property} />
 
         <section className="space-y-6">
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+                <Ban className="h-4 w-4 text-destructive" /> Stop Work Orders
+              </h2>
+              <p className="text-xs text-muted-foreground">{swos.length} on record</p>
+            </div>
+            {swos.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                No stop work orders on record
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Date</th>
+                      <th className="px-3 py-2 text-left font-medium">Complaint #</th>
+                      <th className="px-3 py-2 text-left font-medium">Disposition</th>
+                      <th className="px-3 py-2 text-left font-medium">Category</th>
+                      <th className="px-3 py-2 text-left font-medium">Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {swos.map((s) => {
+                      const cat = (s.disposition_category as string | null) ?? "";
+                      const isOpen = /active|open|issued|in.?progress/i.test(cat);
+                      return (
+                        <tr key={s.id as string}>
+                          <td className="px-3 py-2 whitespace-nowrap">{s.last_disposition_date ?? "—"}</td>
+                          <td className="px-3 py-2 font-mono text-xs">{s.complaint_number}</td>
+                          <td className="px-3 py-2">{s.disposition_code_desc ?? s.disposition_code ?? "—"}</td>
+                          <td className="px-3 py-2">
+                            {cat ? (
+                              <Badge variant={isOpen ? "destructive" : "secondary"}>{cat}</Badge>
+                            ) : "—"}
+                          </td>
+                          <td className="px-3 py-2">{s.address ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Activity timeline</h2>
             <p className="text-xs text-muted-foreground">{filings.length} filings · {permits.length} permits · sorted by latest activity</p>

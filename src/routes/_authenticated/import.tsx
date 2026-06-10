@@ -8,11 +8,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { listSyncLogs } from "@/lib/import.functions";
 import { ingestFilingBatch, ingestPermitBatch, getImportStatus } from "@/lib/properties.functions";
 import { ingestLicenseBatch } from "@/lib/license.functions";
+import { ingestSwoBatch } from "@/lib/swo.functions";
 import {
   normalizeFilingRow, normalizePermitRow, normalizePropertyFromFiling, normalizePropertyFromPermit,
 } from "@/lib/ingest/normalize";
 import { normalizeLicense } from "@/lib/ingest/normalizeLicense";
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard } from "lucide-react";
+import { normalizeSwoRow } from "@/lib/ingest/normalizeSwo";
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { fmtNumber } from "@/lib/format";
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
-type Mode = "filings" | "permits" | "license";
+type Mode = "filings" | "permits" | "license" | "swo";
 
 interface Stats { processed: number; added: number; updated: number; errored: number; skipped: number; }
 const emptyStats = (): Stats => ({ processed: 0, added: 0, updated: 0, errored: 0, skipped: 0 });
@@ -41,6 +43,7 @@ function ImportPage() {
   const ingestFilings = useServerFn(ingestFilingBatch);
   const ingestPermits = useServerFn(ingestPermitBatch);
   const ingestLicense = useServerFn(ingestLicenseBatch);
+  const ingestSwo = useServerFn(ingestSwoBatch);
   const logsFn = useServerFn(listSyncLogs);
   const statusFn = useServerFn(getImportStatus);
   const qc = useQueryClient();
@@ -69,6 +72,7 @@ function ImportPage() {
       const base = { syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last };
       if (mode === "filings") return ingestFilings({ data: { ...base, rows: rows as never } });
       if (mode === "permits") return ingestPermits({ data: { ...base, rows: rows as never } });
+      if (mode === "swo") return ingestSwo({ data: { ...base, rows: rows as never } });
       return ingestLicense({ data: { ...base, rows: rows as never } });
     };
 
@@ -102,6 +106,9 @@ function ImportPage() {
         const permit = normalizePermitRow(raw);
         if (!property || !permit) return null;
         return { property, permit };
+      }
+      if (mode === "swo") {
+        return normalizeSwoRow(raw as Record<string, string>) as unknown as Record<string, unknown> | null;
       }
       return normalizeLicense(raw) as unknown as Record<string, unknown> | null;
     };
@@ -166,16 +173,22 @@ function ImportPage() {
             <ModeButton active={mode === "filings"} onClick={() => switchMode("filings")} disabled={busy}>Job Filings</ModeButton>
             <ModeButton active={mode === "permits"} onClick={() => switchMode("permits")} disabled={busy}>Approved Permits</ModeButton>
             <ModeButton active={mode === "license"} onClick={() => switchMode("license")} disabled={busy}>DOB License Info</ModeButton>
+            <ModeButton active={mode === "swo"} onClick={() => switchMode("swo")} disabled={busy}>Stop Work Orders</ModeButton>
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
-            {mode === "filings" ? "Upload Job Application Filings" : mode === "permits" ? "Upload Approved Permits (.csv or .xlsx)" : "Upload DOB License Info"}
+            {mode === "filings" ? "Upload Job Application Filings"
+              : mode === "permits" ? "Upload Approved Permits (.csv or .xlsx)"
+              : mode === "swo" ? "Upload Stop Work Orders (.xlsx)"
+              : "Upload DOB License Info"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "filings" ? (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — Job Application Filings</a>. Property records are created and updated automatically.</>
             ) : mode === "permits" ? (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB NOW Approved Permits</a>. Linked to properties by BIN.</>
+            ) : mode === "swo" ? (
+              <><Ban className="mr-1 inline h-3.5 w-3.5" />Download Excel from <a href="https://www.nyc.gov/assets/buildings/html/swo-map.html" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC DOB Stop Work Order Map</a>. Only rows whose BIN already exists in Properties are imported.</>
             ) : (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2/data_preview" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB License Info</a>. Joined to filings/permits via license number.</>
             )}
@@ -185,9 +198,9 @@ function ImportPage() {
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div>
               <div className="font-medium">{file ? file.name : "Drop file here or click to browse"}</div>
-              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : ".csv"}</div>
+              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : mode === "swo" ? ".xlsx" : ".csv"}</div>
             </div>
-            <input ref={inputRef} type="file" accept={mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
+            <input ref={inputRef} type="file" accept={mode === "swo" ? ".xlsx" : mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
           </label>
 
           {file && !done && (
@@ -233,7 +246,7 @@ function ImportPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate">
                     <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">
-                      {l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : "filings"}
+                      {l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : l.source === "swo_xlsx_upload" ? "SWO" : "filings"}
                     </span>
                     {l.filename ?? l.source}
                   </div>
