@@ -202,7 +202,6 @@ function ImportPage() {
             </div>
             <input ref={inputRef} type="file" accept={mode === "swo" ? ".xlsx" : mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
           </label>
-          </label>
 
           {file && !done && (
             <Button onClick={start} disabled={busy} className="mt-4 w-full">
