@@ -8,11 +8,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { listSyncLogs } from "@/lib/import.functions";
 import { ingestFilingBatch, ingestPermitBatch, getImportStatus } from "@/lib/properties.functions";
 import { ingestLicenseBatch } from "@/lib/license.functions";
+import { ingestSwoBatch } from "@/lib/swo.functions";
 import {
   normalizeFilingRow, normalizePermitRow, normalizePropertyFromFiling, normalizePropertyFromPermit,
 } from "@/lib/ingest/normalize";
 import { normalizeLicense } from "@/lib/ingest/normalizeLicense";
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard } from "lucide-react";
+import { normalizeSwoRow } from "@/lib/ingest/normalizeSwo";
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { fmtNumber } from "@/lib/format";
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
-type Mode = "filings" | "permits" | "license";
+type Mode = "filings" | "permits" | "license" | "swo";
 
 interface Stats { processed: number; added: number; updated: number; errored: number; skipped: number; }
 const emptyStats = (): Stats => ({ processed: 0, added: 0, updated: 0, errored: 0, skipped: 0 });
@@ -41,6 +43,7 @@ function ImportPage() {
   const ingestFilings = useServerFn(ingestFilingBatch);
   const ingestPermits = useServerFn(ingestPermitBatch);
   const ingestLicense = useServerFn(ingestLicenseBatch);
+  const ingestSwo = useServerFn(ingestSwoBatch);
   const logsFn = useServerFn(listSyncLogs);
   const statusFn = useServerFn(getImportStatus);
   const qc = useQueryClient();
@@ -69,6 +72,7 @@ function ImportPage() {
       const base = { syncLogId, filename: file.name, isFirstBatch: isFirst, isLastBatch: last };
       if (mode === "filings") return ingestFilings({ data: { ...base, rows: rows as never } });
       if (mode === "permits") return ingestPermits({ data: { ...base, rows: rows as never } });
+      if (mode === "swo") return ingestSwo({ data: { ...base, rows: rows as never } });
       return ingestLicense({ data: { ...base, rows: rows as never } });
     };
 
@@ -102,6 +106,9 @@ function ImportPage() {
         const permit = normalizePermitRow(raw);
         if (!property || !permit) return null;
         return { property, permit };
+      }
+      if (mode === "swo") {
+        return normalizeSwoRow(raw as Record<string, string>) as unknown as Record<string, unknown> | null;
       }
       return normalizeLicense(raw) as unknown as Record<string, unknown> | null;
     };
