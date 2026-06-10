@@ -173,6 +173,7 @@ function ImportPage() {
             <ModeButton active={mode === "filings"} onClick={() => switchMode("filings")} disabled={busy}>Job Filings</ModeButton>
             <ModeButton active={mode === "permits"} onClick={() => switchMode("permits")} disabled={busy}>Approved Permits</ModeButton>
             <ModeButton active={mode === "license"} onClick={() => switchMode("license")} disabled={busy}>DOB License Info</ModeButton>
+            <ModeButton active={mode === "swo"} onClick={() => switchMode("swo")} disabled={busy}>Stop Work Orders</ModeButton>
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
