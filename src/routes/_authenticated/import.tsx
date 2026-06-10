@@ -177,13 +177,18 @@ function ImportPage() {
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
-            {mode === "filings" ? "Upload Job Application Filings" : mode === "permits" ? "Upload Approved Permits (.csv or .xlsx)" : "Upload DOB License Info"}
+            {mode === "filings" ? "Upload Job Application Filings"
+              : mode === "permits" ? "Upload Approved Permits (.csv or .xlsx)"
+              : mode === "swo" ? "Upload Stop Work Orders (.xlsx)"
+              : "Upload DOB License Info"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "filings" ? (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-Job-Application-Filings/ic3t-wcy2" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — Job Application Filings</a>. Property records are created and updated automatically.</>
             ) : mode === "permits" ? (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB NOW Approved Permits</a>. Linked to properties by BIN.</>
+            ) : mode === "swo" ? (
+              <><Ban className="mr-1 inline h-3.5 w-3.5" />Download Excel from <a href="https://www.nyc.gov/assets/buildings/html/swo-map.html" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC DOB Stop Work Order Map</a>. Only rows whose BIN already exists in Properties are imported.</>
             ) : (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2/data_preview" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB License Info</a>. Joined to filings/permits via license number.</>
             )}
@@ -193,9 +198,10 @@ function ImportPage() {
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div>
               <div className="font-medium">{file ? file.name : "Drop file here or click to browse"}</div>
-              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : ".csv"}</div>
+              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : mode === "swo" ? ".xlsx" : ".csv"}</div>
             </div>
-            <input ref={inputRef} type="file" accept={mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
+            <input ref={inputRef} type="file" accept={mode === "swo" ? ".xlsx" : mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
+          </label>
           </label>
 
           {file && !done && (
@@ -241,7 +247,7 @@ function ImportPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate">
                     <span className="mr-2 rounded bg-muted px-1.5 py-0.5 text-xs uppercase">
-                      {l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : "filings"}
+                      {l.source === "permits_csv_upload" ? "permits" : l.source === "license_csv_upload" ? "license" : l.source === "swo_xlsx_upload" ? "SWO" : "filings"}
                     </span>
                     {l.filename ?? l.source}
                   </div>
