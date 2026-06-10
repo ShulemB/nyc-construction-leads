@@ -626,6 +626,68 @@ export type Database = {
         }
         Relationships: []
       }
+      stop_work_orders: {
+        Row: {
+          address: string | null
+          bin: string
+          borough_name: string | null
+          community_board: string | null
+          complaint_number: string
+          created_at: string
+          disposition_category: string | null
+          disposition_code: string | null
+          disposition_code_desc: string | null
+          id: string
+          last_disposition_date: string | null
+          last_disposition_year: number | null
+          latitude: number | null
+          longitude: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          bin: string
+          borough_name?: string | null
+          community_board?: string | null
+          complaint_number: string
+          created_at?: string
+          disposition_category?: string | null
+          disposition_code?: string | null
+          disposition_code_desc?: string | null
+          id?: string
+          last_disposition_date?: string | null
+          last_disposition_year?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          bin?: string
+          borough_name?: string | null
+          community_board?: string | null
+          complaint_number?: string
+          created_at?: string
+          disposition_category?: string | null
+          disposition_code?: string | null
+          disposition_code_desc?: string | null
+          id?: string
+          last_disposition_date?: string | null
+          last_disposition_year?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stop_work_orders_bin_fkey"
+            columns: ["bin"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["bin"]
+          },
+        ]
+      }
       sync_log: {
         Row: {
           completed_at: string | null
