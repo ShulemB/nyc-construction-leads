@@ -90,7 +90,7 @@ function PropertiesPage() {
                 <tbody className="divide-y divide-border">
                   {data.properties.map((p) => {
                     const tier = scoreTier(p.lead_score ?? 0);
-                    const owner = p.owner_business_name ?? [p.owner_first_name, p.owner_last_name].filter(Boolean).join(" ") ?? "—";
+                    const ownerName = [p.owner_first_name, p.owner_last_name].filter(Boolean).join(" ") || null;
                     return (
                       <tr key={p.bin} className="hover:bg-accent/30">
                         <td className="px-4 py-3">
