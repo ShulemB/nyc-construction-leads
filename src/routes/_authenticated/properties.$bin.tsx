@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { getProperty } from "@/lib/properties.functions";
 import { addLead } from "@/lib/leads.functions";
+import { listSwosByBin } from "@/lib/swo.functions";
 import { PropertyInfoCard } from "@/components/properties/PropertyInfoCard";
 import { TimelineEntry } from "@/components/properties/TimelineEntry";
-import { ChevronLeft, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, Star, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/properties/$bin")({
