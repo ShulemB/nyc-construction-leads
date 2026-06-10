@@ -90,7 +90,7 @@ function PropertiesPage() {
                 <tbody className="divide-y divide-border">
                   {data.properties.map((p) => {
                     const tier = scoreTier(p.lead_score ?? 0);
-                    const owner = p.owner_business_name ?? [p.owner_first_name, p.owner_last_name].filter(Boolean).join(" ") ?? "—";
+                    const ownerName = [p.owner_first_name, p.owner_last_name].filter(Boolean).join(" ") || null;
                     return (
                       <tr key={p.bin} className="hover:bg-accent/30">
                         <td className="px-4 py-3">
@@ -104,7 +104,14 @@ function PropertiesPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{owner || "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          <div>{ownerName || "—"}</div>
+                          {p.owner_business_name ? (
+                            <div className="text-xs text-muted-foreground">{p.owner_business_name}</div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">&nbsp;</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 text-xs">
                             <span className="rounded-md border border-border bg-muted/40 px-2 py-0.5">{p.filing_count} filings</span>
