@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
+import { ViewDeedButton } from "@/components/leads/ViewDeedButton";
 import { listLeads, updateLead, removeLead } from "@/lib/leads.functions";
 import { Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ type LeadRow = {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  property: { bin: string; borough: string | null; house_number: string | null; street_name: string | null; full_address: string | null; owner_business_name: string | null } | null;
+  property: { bin: string; borough: string | null; house_number: string | null; street_name: string | null; full_address: string | null; owner_business_name: string | null; block: string | null; lot: string | null; bbl: string | null } | null;
 };
 
 function Leads() {
@@ -89,9 +90,17 @@ function Leads() {
                       </select>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button onClick={() => rm.mutate(l.id)} className="text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <ViewDeedButton
+                          block={l.property?.block}
+                          lot={l.property?.lot}
+                          borough={l.property?.borough}
+                          bbl={l.property?.bbl}
+                        />
+                        <button onClick={() => rm.mutate(l.id)} className="text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
