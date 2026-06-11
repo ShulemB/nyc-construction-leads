@@ -106,6 +106,32 @@ function PropertyDetail() {
         <PropertyInfoCard property={property} />
 
         <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Activity timeline</h2>
+            <p className="text-xs text-muted-foreground">{filings.length} filings · {permits.length} permits · sorted by latest activity</p>
+          </div>
+          {timeline.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              No filings or permits for this property.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {timeline.map((entry, i) => {
+                const ln = entry.record.applicant_license;
+                const license = typeof ln === "string" ? licenseMap[ln] ?? null : null;
+                return (
+                  <TimelineEntry
+                    key={`${entry.type}-${entry.record.id ?? i}`}
+                    type={entry.type}
+                    sortDate={entry.sortDate}
+                    record={entry.record}
+                    license={license}
+                  />
+                );
+              })}
+            </div>
+          )}
+
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
@@ -152,32 +178,6 @@ function PropertyDetail() {
               </div>
             )}
           </div>
-
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Activity timeline</h2>
-            <p className="text-xs text-muted-foreground">{filings.length} filings · {permits.length} permits · sorted by latest activity</p>
-          </div>
-          {timeline.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-              No filings or permits for this property.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {timeline.map((entry, i) => {
-                const ln = entry.record.applicant_license;
-                const license = typeof ln === "string" ? licenseMap[ln] ?? null : null;
-                return (
-                  <TimelineEntry
-                    key={`${entry.type}-${entry.record.id ?? i}`}
-                    type={entry.type}
-                    sortDate={entry.sortDate}
-                    record={entry.record}
-                    license={license}
-                  />
-                );
-              })}
-            </div>
-          )}
         </section>
       </div>
     </AppShell>
