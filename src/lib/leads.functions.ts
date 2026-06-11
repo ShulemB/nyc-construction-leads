@@ -9,7 +9,7 @@ export const listLeads = createServerFn({ method: "GET" })
       .from("leads")
       .select(
         "id, bin, status, notes, created_at, updated_at, " +
-        "property:properties(bin, borough, house_number, street_name, full_address, owner_business_name)",
+        "property:properties(bin, borough, house_number, street_name, full_address, owner_business_name, block, lot, bbl)",
       )
       .eq("user_id", context.userId)
       .order("updated_at", { ascending: false });
