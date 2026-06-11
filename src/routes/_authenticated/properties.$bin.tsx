@@ -101,10 +101,10 @@ function PropertyDetail() {
             <Star className="h-4 w-4" /> Add to leads
           </button>
           <ViewDeedButton
-            block={property.block}
-            lot={property.lot}
-            borough={property.borough}
-            bbl={property.bbl}
+            block={property.block as string | null}
+            lot={property.lot as string | null}
+            borough={property.borough as string | null}
+            bbl={property.bbl as string | null}
           />
         </div>
       </div>
