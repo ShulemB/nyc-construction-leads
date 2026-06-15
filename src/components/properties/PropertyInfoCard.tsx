@@ -1,4 +1,5 @@
 import { GoogleMapImage } from "@/components/filings/GoogleMapImage";
+import { ViewDeedButton } from "@/components/leads/ViewDeedButton";
 
 type V = string | number | null | undefined;
 
@@ -81,6 +82,13 @@ export function PropertyInfoCard({ property: p }: { property: Record<string, V> 
           <F label="Business">{p.owner_business_name}</F>
           <F label="Address">{ownerAddr || null}</F>
           <F label="Type">{p.owner_type}</F>
+          <div className="mt-1">
+            <ViewDeedButton
+              borough={p.borough == null ? null : String(p.borough)}
+              block={p.block == null ? null : String(p.block)}
+              lot={p.lot == null ? null : String(p.lot)}
+            />
+          </div>
         </Section>
       )}
 
