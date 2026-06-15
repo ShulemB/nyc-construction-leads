@@ -7,7 +7,7 @@ import { addLead } from "@/lib/leads.functions";
 import { listSwosByBin } from "@/lib/swo.functions";
 import { PropertyInfoCard } from "@/components/properties/PropertyInfoCard";
 import { TimelineEntry } from "@/components/properties/TimelineEntry";
-import { ViewDeedButton } from "@/components/leads/ViewDeedButton";
+
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Star, Ban } from "lucide-react";
 import { toast } from "sonner";
@@ -100,12 +100,6 @@ function PropertyDetail() {
           >
             <Star className="h-4 w-4" /> Add to leads
           </button>
-          <ViewDeedButton
-            block={property.block as string | null}
-            lot={property.lot as string | null}
-            borough={property.borough as string | null}
-            bbl={property.bbl as string | null}
-          />
         </div>
       </div>
 
