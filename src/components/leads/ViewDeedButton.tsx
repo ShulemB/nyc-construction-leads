@@ -2,45 +2,31 @@ import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ViewDeedButtonProps {
-  block?: string | null | undefined;
-  lot?: string | null | undefined;
-  borough?: string | null | undefined;
-  bbl?: string | null | undefined;
+  borough: string | null | undefined;
+  block: string | null | undefined;
+  lot: string | null | undefined;
 }
 
-function getBoroughCode(borough: string | null | undefined): string | null {
-  if (!borough) return null;
-  const map: Record<string, string> = {
-    "1": "1", "manhattan": "1",
-    "2": "2", "bronx": "2",
-    "3": "3", "brooklyn": "3",
-    "4": "4", "queens": "4",
-    "5": "5", "staten island": "5",
-  };
-  return map[borough.toLowerCase().trim()] ?? null;
+const BOROUGH_CODES: Record<string, string> = {
+  MANHATTAN: "1",
+  BRONX: "2",
+  BROOKLYN: "3",
+  QUEENS: "4",
+  "STATEN ISLAND": "5",
+};
+
+function buildAcrisUrl(borough: string, block: string, lot: string): string {
+  const code = BOROUGH_CODES[borough.toUpperCase().trim()] ?? "1";
+  const paddedBlock = block.trim().padStart(5, "0");
+  const paddedLot = lot.trim().padStart(4, "0");
+  return `http://a836-acris.nyc.gov/bblsearch/bblsearch.asp?borough=${code}&block=${paddedBlock}&lot=${paddedLot}`;
 }
 
-export function ViewDeedButton({ block, lot, borough, bbl }: ViewDeedButtonProps) {
-  if (!block || !lot) return null;
+export function ViewDeedButton({ borough, block, lot }: ViewDeedButtonProps) {
+  if (!borough || !block || !lot) return null;
 
   const handleViewDeed = () => {
-    let url: string;
-
-    if (bbl) {
-      url = `https://a836-acris.nyc.gov/DS/DocumentSearch/BBL?BBL=${bbl}&bbl_doctype=DEED`;
-    } else {
-      const boroughCode = getBoroughCode(borough);
-      if (boroughCode) {
-        const formattedBbl =
-          boroughCode +
-          block.padStart(5, "0") +
-          lot.padStart(4, "0");
-        url = `https://a836-acris.nyc.gov/DS/DocumentSearch/BBL?BBL=${formattedBbl}&bbl_doctype=DEED`;
-      } else {
-        url = `https://a836-acris.nyc.gov/DS/DocumentSearch/BBL?bbl_block=${block}&bbl_lot=${lot}&bbl_doctype=DEED`;
-      }
-    }
-
+    const url = buildAcrisUrl(borough, block, lot);
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
