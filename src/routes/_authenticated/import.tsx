@@ -9,12 +9,14 @@ import { listSyncLogs } from "@/lib/import.functions";
 import { ingestFilingBatch, ingestPermitBatch, getImportStatus } from "@/lib/properties.functions";
 import { ingestLicenseBatch } from "@/lib/license.functions";
 import { ingestSwoBatch } from "@/lib/swo.functions";
+import { ingestBedbugBatch } from "@/lib/bedbug.functions";
 import {
   normalizeFilingRow, normalizePermitRow, normalizePropertyFromFiling, normalizePropertyFromPermit,
 } from "@/lib/ingest/normalize";
 import { normalizeLicense } from "@/lib/ingest/normalizeLicense";
 import { normalizeSwoRow } from "@/lib/ingest/normalizeSwo";
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard, Ban } from "lucide-react";
+import { normalizeBedbugRow } from "@/lib/ingest/normalizeBedbug";
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Building2, FileSearch, IdCard, Ban, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { fmtNumber } from "@/lib/format";
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 const BATCH_SIZE = 250;
-type Mode = "filings" | "permits" | "license" | "swo";
+type Mode = "filings" | "permits" | "license" | "swo" | "bedbug";
 
 interface Stats { processed: number; added: number; updated: number; errored: number; skipped: number; }
 const emptyStats = (): Stats => ({ processed: 0, added: 0, updated: 0, errored: 0, skipped: 0 });
@@ -44,6 +46,7 @@ function ImportPage() {
   const ingestPermits = useServerFn(ingestPermitBatch);
   const ingestLicense = useServerFn(ingestLicenseBatch);
   const ingestSwo = useServerFn(ingestSwoBatch);
+  const ingestBedbug = useServerFn(ingestBedbugBatch);
   const logsFn = useServerFn(listSyncLogs);
   const statusFn = useServerFn(getImportStatus);
   const qc = useQueryClient();
@@ -73,6 +76,7 @@ function ImportPage() {
       if (mode === "filings") return ingestFilings({ data: { ...base, rows: rows as never } });
       if (mode === "permits") return ingestPermits({ data: { ...base, rows: rows as never } });
       if (mode === "swo") return ingestSwo({ data: { ...base, rows: rows as never } });
+      if (mode === "bedbug") return ingestBedbug({ data: { ...base, rows: rows as never } });
       return ingestLicense({ data: { ...base, rows: rows as never } });
     };
 
@@ -109,6 +113,9 @@ function ImportPage() {
       }
       if (mode === "swo") {
         return normalizeSwoRow(raw as Record<string, string>) as unknown as Record<string, unknown> | null;
+      }
+      if (mode === "bedbug") {
+        return normalizeBedbugRow(raw) as unknown as Record<string, unknown> | null;
       }
       return normalizeLicense(raw) as unknown as Record<string, unknown> | null;
     };
