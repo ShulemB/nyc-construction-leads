@@ -176,17 +176,19 @@ function ImportPage() {
 
       <div className="grid gap-6 px-8 pb-8 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
-          <div className="flex gap-2 rounded-lg bg-muted p-1">
+          <div className="flex flex-wrap gap-2 rounded-lg bg-muted p-1">
             <ModeButton active={mode === "filings"} onClick={() => switchMode("filings")} disabled={busy}>Job Filings</ModeButton>
             <ModeButton active={mode === "permits"} onClick={() => switchMode("permits")} disabled={busy}>Approved Permits</ModeButton>
             <ModeButton active={mode === "license"} onClick={() => switchMode("license")} disabled={busy}>DOB License Info</ModeButton>
             <ModeButton active={mode === "swo"} onClick={() => switchMode("swo")} disabled={busy}>Stop Work Orders</ModeButton>
+            <ModeButton active={mode === "bedbug"} onClick={() => switchMode("bedbug")} disabled={busy}>Bedbug Reports</ModeButton>
           </div>
 
           <h2 className="mt-5 font-display text-lg font-semibold">
             {mode === "filings" ? "Upload Job Application Filings"
               : mode === "permits" ? "Upload Approved Permits (.csv or .xlsx)"
               : mode === "swo" ? "Upload Stop Work Orders (.xlsx)"
+              : mode === "bedbug" ? "Upload Bedbug Reports (.csv or .xlsx)"
               : "Upload DOB License Info"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -196,6 +198,8 @@ function ImportPage() {
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB NOW Approved Permits</a>. Linked to properties by BIN.</>
             ) : mode === "swo" ? (
               <><Ban className="mr-1 inline h-3.5 w-3.5" />Download Excel from <a href="https://www.nyc.gov/assets/buildings/html/swo-map.html" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC DOB Stop Work Order Map</a>. Only rows whose BIN already exists in Properties are imported.</>
+            ) : mode === "bedbug" ? (
+              <><Bug className="mr-1 inline h-3.5 w-3.5" />Export from <a href="https://data.cityofnewyork.us/Housing-Development/Bedbug-Reporting/wz6d-d3jb" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC HPD Bedbug Disclosure data</a>. All rows with a BIN are imported; re-uploads are idempotent.</>
             ) : (
               <>Export from <a href="https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2/data_preview" target="_blank" rel="noreferrer" className="text-brand hover:underline">NYC Open Data — DOB License Info</a>. Joined to filings/permits via license number.</>
             )}
@@ -205,9 +209,9 @@ function ImportPage() {
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div>
               <div className="font-medium">{file ? file.name : "Drop file here or click to browse"}</div>
-              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" ? ".csv or .xlsx" : mode === "swo" ? ".xlsx" : ".csv"}</div>
+              <div className="text-xs text-muted-foreground">{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : mode === "permits" || mode === "bedbug" ? ".csv or .xlsx" : mode === "swo" ? ".xlsx" : ".csv"}</div>
             </div>
-            <input ref={inputRef} type="file" accept={mode === "swo" ? ".xlsx" : mode === "permits" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
+            <input ref={inputRef} type="file" accept={mode === "swo" ? ".xlsx" : mode === "permits" || mode === "bedbug" ? ".csv,.xlsx,text/csv" : ".csv,text/csv"} onChange={onPick} className="hidden" />
           </label>
 
           {file && !done && (
