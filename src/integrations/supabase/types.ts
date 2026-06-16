@@ -139,6 +139,87 @@ export type Database = {
           },
         ]
       }
+      bed_bug_reports: {
+        Row: {
+          bbl: string | null
+          bin: string
+          borough: string | null
+          building_id: string | null
+          census_tract_2010: string | null
+          community_board: string | null
+          council_district: string | null
+          created_at: string
+          dwelling_units: number | null
+          eradicated_unit_count: number | null
+          filing_date: string | null
+          filing_period_end_date: string | null
+          filing_period_start_date: string | null
+          house_number: string | null
+          id: string
+          infested_unit_count: number | null
+          latitude: string | null
+          longitude: string | null
+          nta: string | null
+          postcode: string | null
+          re_infested_unit_count: number | null
+          registration_id: string | null
+          street_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          bbl?: string | null
+          bin: string
+          borough?: string | null
+          building_id?: string | null
+          census_tract_2010?: string | null
+          community_board?: string | null
+          council_district?: string | null
+          created_at?: string
+          dwelling_units?: number | null
+          eradicated_unit_count?: number | null
+          filing_date?: string | null
+          filing_period_end_date?: string | null
+          filing_period_start_date?: string | null
+          house_number?: string | null
+          id: string
+          infested_unit_count?: number | null
+          latitude?: string | null
+          longitude?: string | null
+          nta?: string | null
+          postcode?: string | null
+          re_infested_unit_count?: number | null
+          registration_id?: string | null
+          street_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bbl?: string | null
+          bin?: string
+          borough?: string | null
+          building_id?: string | null
+          census_tract_2010?: string | null
+          community_board?: string | null
+          council_district?: string | null
+          created_at?: string
+          dwelling_units?: number | null
+          eradicated_unit_count?: number | null
+          filing_date?: string | null
+          filing_period_end_date?: string | null
+          filing_period_start_date?: string | null
+          house_number?: string | null
+          id?: string
+          infested_unit_count?: number | null
+          latitude?: string | null
+          longitude?: string | null
+          nta?: string | null
+          postcode?: string | null
+          re_infested_unit_count?: number | null
+          registration_id?: string | null
+          street_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dob_license_info: {
         Row: {
           bbl: string | null
